@@ -1,0 +1,8 @@
+biomaj
+biomaj-user
+redis
+PyYAML
+flask
+python-consul
+prometheus_client
+requests
