@@ -562,6 +562,7 @@ def biomaj_update_cancel(options):
     redis_client.set(config['redis']['prefix'] + ':' + options.bank + ':action:cancel', 1)
     return (True, 'Requested to cancel update of bank ' + options.bank + ', update will stop once current actions are over')
 
+
 def biomaj_update_status(options):
     '''
     get the status of a bank during an update cycle
