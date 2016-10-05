@@ -397,6 +397,9 @@ def biomaj_bank_update(options):
             continue
         else:
             msg += 'Bank update request sent for ' + options.bank + '\n'
+            if not options.proxy:
+                res = bmaj.update(depends=True)
+                return (res, '')
             res = biomaj_bank_update_request(options)
             if not res:
                 msg += 'Failed to send update request for ' + options.bank + '\n'
@@ -460,8 +463,14 @@ def biomaj_remove(options):
 
     res = True
     if options.removeall:
+        if not options.proxy:
+            res = bmaj.removeAll(options.force)
+            return (res, '')
         res = biomaj_remove_request(options)
     else:
+        if not options.proxy:
+            res = bmaj.remove(options.release)
+            return (res, '')
         res = biomaj_remove_request(options)
     if not res:
         return (False, 'Failed to send removal request')
@@ -484,6 +493,9 @@ def biomaj_remove_pending(options):
     bmaj = Bank(options.bank, options, no_log=True)
     if bmaj.is_locked():
         return (False, 'Bank is locked due to an other action')
+    if not options.proxy:
+        res = bmaj.remove_pending(options.release)
+        return (res, '')
     res = biomaj_remove_pending_request(options)
     if not res:
         return (False, 'Failed to send removal request')
@@ -537,6 +549,18 @@ def biomaj_publish(options):
     bmaj.publish()
     return (True, None)
 
+
+def biomaj_update_cancel(options):
+    '''
+    Cancel current update of a Bank
+
+    Running actions (download, process) will continue on remote services but will not manage next actions.
+    Biomaj process will exit when ready with a *False* status.
+    '''
+    if not options.bank:
+        return (False, "Bank name is missing")
+    redis_client.set(config['redis']['prefix'] + ':' + options.bank + ':action:cancel', 1)
+    return (True, 'Requested to cancel update of bank ' + options.bank + ', update will stop once current actions are over')
 
 def biomaj_update_status(options):
     '''
@@ -644,6 +668,9 @@ def biomaj_client_action(options):
     if options.updatestatus:
         return biomaj_update_status(options)
 
+    if options.updatecancel:
+        return biomaj_update_cancel(options)
+
 
 @app.route('/api/daemon', methods=['POST'])
 def biomaj_daemon():
@@ -663,6 +690,11 @@ def biomaj_daemon():
         options_object = Options(options)
         options_object.token = token
         options_object.user = None
+        options_object.redis_host = config['redis']['host']
+        options_object.redis_port = config['redis']['port']
+        options_object.redis_db = config['redis']['db']
+        options_object.redis_prefix = config['redis']['prefix']
+
         user = None
         if token:
             r = requests.get(config['web']['local_endpoint'] + '/api/user/info/apikey/' + token)

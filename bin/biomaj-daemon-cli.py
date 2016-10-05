@@ -26,6 +26,7 @@ def main():
     parser.add_argument('--proxy', dest="proxy",help="Biomaj daemon URL")  # http://127.0.0.1
     parser.add_argument('--api-key', dest="apikey", help="User API Key")
     parser.add_argument('--update-status', dest="updatestatus", action="store_true", default=False, help="Get update status")
+    parser.add_argument('--update-cancel', dest="updatecancel", action="store_true", default=False, help="Cancel current bank update")
 
     options = Options()
     parser.parse_args(namespace=options)
@@ -40,7 +41,11 @@ def main():
 
     --update-status: get status of an update
         [MANDATORY]
-        --bank xx: name of the bank to check (will check xx.properties)
+        --bank xx: name of the bank to check
+
+    --update-cancel: cancel current update
+        [MANDATORY]
+        --bank xx: name of the bank to cancel
 
     --status: list of banks with published release
         [OPTIONAL]
@@ -136,8 +141,10 @@ def main():
         return
 
     proxy = options.proxy
+
     if 'BIOMAJ_PROXY' in os.environ:
         proxy = os.environ['BIOMAJ_PROXY']
+        options.proxy = proxy
     try:
         if not proxy:
             options.user = os.environ['LOGNAME']
