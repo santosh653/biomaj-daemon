@@ -58,7 +58,7 @@ if not os.path.exists(cache_dir):
     os.makedirs(cache_dir)
 lock_dir = BiomajConfig.global_config.get('GENERAL', 'lock.dir')
 if not os.path.exists(lock_dir):
-    os.makedirs(lock_dir)        
+    os.makedirs(lock_dir)
 
 redis_client = redis.StrictRedis(
     host=config['redis']['host'],
@@ -764,7 +764,7 @@ def biomaj_daemon():
     return jsonify({'status': res, 'msg': msg})
 
 
-@app.route('/api/process/metrics', methods=['GET'])
+@app.route('/api/daemon/metrics', methods=['GET'])
 def metrics():
     return generate_latest()
 
