@@ -28,6 +28,7 @@ from tabulate import tabulate
 from biomaj.bank import Bank
 from biomaj.options import Options as BmajOptions
 from biomaj_core.config import BiomajConfig
+from biomaj_core.utils import Utils
 from biomaj.workflow import Workflow
 from biomaj.workflow import UpdateWorkflow
 from biomaj.workflow import RemoveWorkflow
@@ -39,7 +40,25 @@ if 'BIOMAJ_CONFIG' in os.environ:
 config = None
 with open(config_file, 'r') as ymlfile:
     config = yaml.load(ymlfile)
+    Utils.service_config_override(config)
+
 BiomajConfig.load_config(config['biomaj']['config'])
+
+data_dir = BiomajConfig.global_config.get('GENERAL', 'data.dir')
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+log_dir = BiomajConfig.global_config.get('GENERAL', 'log.dir')
+if not os.path.exists(log_dir):
+    os.makedirs(log_dir)
+process_dir = BiomajConfig.global_config.get('GENERAL', 'process.dir')
+if not os.path.exists(process_dir):
+    os.makedirs(process_dir)
+cache_dir = BiomajConfig.global_config.get('GENERAL', 'cache.dir')
+if not os.path.exists(cache_dir):
+    os.makedirs(cache_dir)
+lock_dir = BiomajConfig.global_config.get('GENERAL', 'lock.dir')
+if not os.path.exists(lock_dir):
+    os.makedirs(lock_dir)        
 
 redis_client = redis.StrictRedis(
     host=config['redis']['host'],
@@ -610,6 +629,28 @@ def biomaj_update_status(options):
     return (True, tabulate(pending_actions, headers="firstrow", tablefmt="grid") + tabulate(msg, headers="firstrow", tablefmt="grid"))
 
 
+def biomaj_user_info(options):
+    '''
+    Get user info, need login/password
+    '''
+    if not options.userlogin or not options.userpassword:
+        return (False, 'Missing login or password')
+    if not options.proxy:
+        return (False, 'Missing proxy information')
+    bindinfo = {'type': 'password', 'value': options.password}
+    try:
+        r = requests.post(config['web']['local_endpoint'] + '/api/user/bind/user/' + options.user, json=bindinfo)
+        if not r.status_code == 200:
+            abort(401, {'message': 'Invalid credentials'})
+        user = r.json()['user']
+    except Exception as e:
+        return (False, 'Connection error to proxy: ' + str(e))
+    msg = 'User: ' + str(user['id']) + '\n'
+    msg += 'Email: ' + str(user['email']) + '\n'
+    msg += 'Api key: ' + str(user['apikey']) + '\n'
+    return (True, msg)
+
+
 def biomaj_client_action(options):
     check_options(options)
     if options.version:
@@ -671,6 +712,9 @@ def biomaj_client_action(options):
 
     if options.updatecancel:
         return biomaj_update_cancel(options)
+
+    if options.aboutme:
+        return biomaj_user_info(options)
 
 
 @app.route('/api/daemon', methods=['POST'])

@@ -3,9 +3,9 @@ import logging
 
 import requests
 import yaml
-import consul
 
 from biomaj_daemon.daemon.daemon_service import DaemonService
+from biomaj_core.utils import Utils
 
 config_file = 'config.yml'
 if 'BIOMAJ_CONFIG' in os.environ:
@@ -14,6 +14,7 @@ if 'BIOMAJ_CONFIG' in os.environ:
 config = None
 with open(config_file, 'r') as ymlfile:
     config = yaml.load(ymlfile)
+    Utils.service_config_override(config)
 
 
 def on_executed(bank, procs):
@@ -29,7 +30,10 @@ def on_executed(bank, procs):
             else:
                 metric['execution_time'] = proc['execution_time']
             metrics.append(metric)
-        r = requests.post(config['web']['local_endpoint'] + '/api/daemon/metrics', json = metrics)
+        try:
+            requests.post(config['web']['local_endpoint'] + '/api/daemon/metrics', json=metrics)
+        except Exception as e:
+            logging.error('Failed to post metrics: ' + str(e))
 
 
 process = DaemonService(config_file)

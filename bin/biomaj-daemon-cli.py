@@ -1,29 +1,24 @@
 #!/usr/bin/env python
-from __future__ import print_function
-from future import standard_library
-standard_library.install_aliases()
-from builtins import str
-from tabulate import tabulate
-
 import os
 import sys
-#from optparse import OptionParser
 import argparse
-import pkg_resources
-import configparser
-import shutil
 import logging
+
+import requests
 
 from biomaj_daemon.daemon.biomaj_daemon_web import biomaj_client_action
 from biomaj.options import Options
 from biomaj_daemon.daemon.utils import Utils
-import requests
+
 
 def main():
 
     parser = argparse.ArgumentParser(add_help=False)
     Utils.set_args(parser)
-    parser.add_argument('--proxy', dest="proxy",help="Biomaj daemon URL")  # http://127.0.0.1
+    parser.add_argument('--about-me', dest="aboutme", action="store_true", help="Get my user info")
+    parser.add_argument('--user-login', dest="userlogin", help="Credentials login")
+    parser.add_argument('--user-password', dest="userpassword", help="Credentials password")
+    parser.add_argument('--proxy', dest="proxy", help="Biomaj daemon URL")  # http://127.0.0.1
     parser.add_argument('--api-key', dest="apikey", help="User API Key")
     parser.add_argument('--update-status', dest="updatestatus", action="store_true", default=False, help="Get update status")
     parser.add_argument('--update-cancel', dest="updatecancel", action="store_true", default=False, help="Cancel current bank update")
@@ -38,6 +33,12 @@ def main():
     --config: global.properties file path
 
     --proxy: BioMAJ daemon url (http://x.y.z)
+
+    --about-me: Get my info
+        [MANDATORY]
+        --proxy http://x.y.z
+        --login XX
+        --password XX
 
     --update-status: get status of an update
         [MANDATORY]
@@ -145,6 +146,11 @@ def main():
     if 'BIOMAJ_PROXY' in os.environ:
         proxy = os.environ['BIOMAJ_PROXY']
         options.proxy = proxy
+
+    if 'BIOMAJ_APIKEY' in os.environ:
+        apikey = os.environ['BIOMAJ_APIKEY']
+        options.apikey = apikey
+
     try:
         if not proxy:
             options.user = os.environ['LOGNAME']
@@ -153,7 +159,7 @@ def main():
             headers = {}
             if options.apikey:
                 headers = {'Authorization': 'APIKEY ' + options.apikey}
-            r = requests.post(proxy + '/api/daemon', headers=headers, json = {'options': options.__dict__})
+            r = requests.post(proxy + '/api/daemon', headers=headers, json={'options': options.__dict__})
             if not r.status_code == 200:
                 print('Failed to contact BioMAJ daemon')
                 sys.exit(1)
