@@ -84,6 +84,7 @@ def consul_declare(config):
 
 consul_declare(config)
 
+
 class Options(object):
     def __init__(self, d):
         self.__dict__ = d
