@@ -783,5 +783,5 @@ def add_metrics():
             biomaj_time_metric.labels(proc['bank']).set(proc['execution_time'])
     return jsonify({'msg': 'OK'})
 
-if __name__ == "__main__":
+if __name__ == "__main__" or __name__ == "biomaj_daemon.daemon.biomaj_daemon_web"::
     start_server(config)
