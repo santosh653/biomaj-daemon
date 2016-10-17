@@ -74,19 +74,12 @@ biomaj_error_metric = Counter("biomaj_daemon_errors", "Bank total update errors.
 biomaj_time_metric = Gauge("biomaj_daemon_time", "Bank update execution time in seconds.", ['bank'])
 
 
-def start_server(config):
-    context = None
-    if config['tls']['cert']:
-        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
-        context.load_cert_chain(config['tls']['cert'], config['tls']['key'])
-
+def consul_declare(config):
     if config['consul']['host']:
         consul_agent = consul.Consul(host=config['consul']['host'])
         consul_agent.agent.service.register('biomaj_daemon', service_id=config['consul']['id'], port=config['web']['port'], tags=['biomaj'])
         check = consul.Check.http(url=config['web']['hostname'] + '/api/daemon', interval=20)
         consul_agent.agent.check.register(config['consul']['id'] + '_check', check=check, service_id=config['consul']['id'])
-
-    app.run(host='0.0.0.0', port=config['web']['port'], ssl_context=context, threaded=True, debug=config['web']['debug'])
 
 
 class Options(object):
@@ -783,5 +776,10 @@ def add_metrics():
             biomaj_time_metric.labels(proc['bank']).set(proc['execution_time'])
     return jsonify({'msg': 'OK'})
 
-if __name__ == "__main__" or __name__ == "biomaj_daemon.daemon.biomaj_daemon_web"::
-    start_server(config)
+if __name__ == "__main__":
+    consul_declare(config)
+    context = None
+    if config['tls']['cert']:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
+        context.load_cert_chain(config['tls']['cert'], config['tls']['key'])
+    app.run(host='0.0.0.0', port=config['web']['port'], ssl_context=context, threaded=True, debug=config['web']['debug'])
