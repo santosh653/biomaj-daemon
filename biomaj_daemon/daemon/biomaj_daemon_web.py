@@ -97,6 +97,7 @@ class Options(object):
             return getattr(self, option)
         return None
 
+
 @app.route('/api/daemon', methods=['GET'])
 def ping():
     return jsonify({'msg': 'pong'})
