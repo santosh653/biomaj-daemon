@@ -89,6 +89,13 @@ class Options(object):
     def __init__(self, d):
         self.__dict__ = d
 
+    def get_option(self, option):
+        """
+        Gets an option if present, else return None
+        """
+        if hasattr(self, option):
+            return getattr(self, option)
+        return None
 
 @app.route('/api/daemon', methods=['GET'])
 def ping():
