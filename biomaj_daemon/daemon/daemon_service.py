@@ -11,6 +11,7 @@ import redis
 from biomaj_core.config import BiomajConfig
 from biomaj.bank import Bank
 from biomaj.notify import Notify
+from biomaj_core.utils import Utils
 
 
 class Options(object):
@@ -36,6 +37,7 @@ class DaemonService(object):
         self.executed_callback = None
         with open(config_file, 'r') as ymlfile:
             self.config = yaml.load(ymlfile)
+            Utils.service_config_override(self.config)
 
         BiomajConfig.load_config(self.config['biomaj']['config'])
 
