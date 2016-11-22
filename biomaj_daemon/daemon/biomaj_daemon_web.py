@@ -114,7 +114,7 @@ OPTIONS_PARAMS = {
     'show': False,
     'newbank': None,
     'newdir': None,
-    'visibility': 'public',
+    'visibility': None,
     'maintenance': None,
     'version': False,
     'statusko': False
@@ -215,7 +215,7 @@ def biomaj_owner(options):
     '''
     if not options.bank:
         return (False, "Bank option is missing")
-    bank = Bank(options.bank, no_log=True)
+    bank = Bank(options.bank, options=options, no_log=True)
     bank.set_owner(options.owner)
     return (True, None)
 
@@ -229,7 +229,7 @@ def biomaj_visibility(options):
     if options.visibility not in ['public', 'private']:
         return (False, "Valid values are public|private")
 
-    bank = Bank(options.bank, no_log=True)
+    bank = Bank(options.bank, options=options, no_log=True)
     bank.set_visibility(options.visibility)
     return (True, "Do not forget to update accordingly the visibility.default parameter in the configuration file")
 
@@ -273,7 +273,7 @@ def biomaj_newbank(options):
     if not options.bank:
         return (False, "Bank option is missing")
 
-    bank = Bank(options.bank, no_log=True)
+    bank = Bank(options.bank, options=options, no_log=True)
     conf_dir = BiomajConfig.global_config.get('GENERAL', 'conf.dir')
     bank_prop_file = os.path.join(conf_dir, options.bank + '.properties')
     config_bank = configparser.SafeConfigParser()
@@ -332,7 +332,7 @@ def biomaj_show(options):
     if not options.bank:
         return (False, "Bank option is required")
 
-    bank = Bank(options.bank, no_log=True)
+    bank = Bank(options.bank, options=options, no_log=True)
     results = [["Name", "Release", "Format(s)", "Type(s)", "Tag(s)", "File(s)"]]
     current = None
     fformat = None
@@ -376,7 +376,7 @@ def biomaj_check(options):
     if not options.bank:
         return (False, "Bank name is missing")
 
-    bank = Bank(options.bank, no_log=True)
+    bank = Bank(options.bank, options=options, no_log=True)
     msg = options.bank + " check: " + str(bank.check()) + "\n"
     return (True, msg)
 
@@ -416,7 +416,7 @@ def biomaj_status_ko(options):
     banks_list = [["Name", "Type(s)", "Release", "Visibility", "Last run"]]
     for bank in sorted(banks, key=lambda k: k['name']):
         try:
-            bank = Bank(bank['name'], no_log=True)
+            bank = Bank(bank['name'], options=options, no_log=True)
             bank.load_session(UpdateWorkflow.FLOW)
             if bank.session is not None:
                 if bank.use_last_session and not bank.session.get_status(Workflow.FLOW_OVER):
@@ -456,7 +456,7 @@ def biomaj_bank_update(options):
     msg = ''
     for bank in banks:
         options.bank = bank
-        bmaj = Bank(bank, options, no_log=True)
+        bmaj = Bank(bank, options=options, no_log=True)
         if bmaj.is_locked():
             return (False, 'Bank is locked due to an other action')
         check_status = bmaj.check()
@@ -486,7 +486,7 @@ def biomaj_freeze(options):
         return (False, "Bank name is missing")
     if not options.release:
         return (False, "Bank release is missing")
-    bmaj = Bank(options.bank, options)
+    bmaj = Bank(options.bank, options=options)
     res = bmaj.freeze(options.release)
     if not res:
         return (False, 'Failed to freeze the bank release')
@@ -502,7 +502,7 @@ def biomaj_unfreeze(options):
     if not options.release:
         return (False, "Bank release is missing")
 
-    bmaj = Bank(options.bank, options)
+    bmaj = Bank(options.bank, options=options)
     res = bmaj.unfreeze(options.release)
     if not res:
         return (False, 'Failed to unfreeze the bank release')
@@ -526,7 +526,7 @@ def biomaj_remove(options):
     if options.remove and not options.release:
         return (False, "Bank release is missing")
 
-    bmaj = Bank(options.bank, options, no_log=True)
+    bmaj = Bank(options.bank, options=options, no_log=True)
     if bmaj.is_locked():
         return (False, 'Bank is locked due to an other action')
 
@@ -559,7 +559,7 @@ def biomaj_remove_pending(options):
     '''
     if not options.bank:
         return (False, "Bank name is missing")
-    bmaj = Bank(options.bank, options, no_log=True)
+    bmaj = Bank(options.bank, options=options, no_log=True)
     if bmaj.is_locked():
         return (False, 'Bank is locked due to an other action')
     if not options.proxy:
@@ -578,7 +578,7 @@ def biomaj_unpublish(options):
     if not options.bank:
         return (False, "Bank name is missing")
 
-    bmaj = Bank(options.bank, options, no_log=True)
+    bmaj = Bank(options.bank, options=options, no_log=True)
     bmaj.load_session()
     bmaj.unpublish()
     return (True, None)
@@ -590,7 +590,7 @@ def biomaj_publish(options):
     '''
     if not options.bank:
         return (False, "Bank name or release is missing")
-    bmaj = Bank(options.bank, options, no_log=True)
+    bmaj = Bank(options.bank, options=options, no_log=True)
     bmaj.load_session()
     bank = bmaj.bank
     session = None
@@ -649,7 +649,7 @@ def biomaj_update_status(options):
                 elif pending_bank['remove'] or pending_bank['removeall']:
                     pending_actions.append(['Removal - release ' + str(pending_bank['release']), action_time])
 
-    bmaj = Bank(options.bank, options, no_log=True)
+    bmaj = Bank(options.bank, options=options, no_log=True)
     if 'status' not in bmaj.bank:
         return (True, 'No update information available')
     status_info = bmaj.bank['status']
