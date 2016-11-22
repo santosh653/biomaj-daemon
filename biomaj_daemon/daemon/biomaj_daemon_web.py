@@ -84,10 +84,56 @@ def consul_declare(config):
 
 consul_declare(config)
 
+OPTIONS_PARAMS = {
+    'config': None,
+    'check': False,
+    'update': False,
+    'fromscratch': False,
+    'publish': False,
+    'unpublish': False,
+    'release': None,
+    'from_task': None,
+    'process': None,
+    'log': None,
+    'remove': False,
+    'removeall': False,
+    'removepending': False,
+    'status': False,
+    'bank': None,
+    'owner': None,
+    'stop_before': None,
+    'stop_after': None,
+    'freeze': False,
+    'unfreeze': False,
+    'force': False,
+    'help': False,
+    'search': False,
+    'formats': None,
+    'types': None,
+    'query': None,
+    'show': False,
+    'newbank': None,
+    'newdir': None,
+    'visibility': 'public',
+    'maintenance': None,
+    'version': False,
+    'statusko': False
+}
 
 class Options(object):
     def __init__(self, d):
         self.__dict__ = d
+        for key in list(OPTIONS_PARAMS.keys()):
+            if not self.has_option(key):
+                setattr(self, key, OPTIONS_PARAMS[key])
+
+
+
+    def has_option(self, option):
+        if hasattr(self, option):
+            return True
+        else:
+            return False
 
     def get_option(self, option):
         """
