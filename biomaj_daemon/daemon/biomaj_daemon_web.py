@@ -641,7 +641,7 @@ def biomaj_user_info(options):
         return (False, 'Missing login or password')
     if not options.proxy:
         return (False, 'Missing proxy information')
-    bindinfo = {'type': 'password', 'value': options.password}
+    bindinfo = {'type': 'password', 'value': options.userpassword}
     try:
         r = requests.post(config['web']['local_endpoint'] + '/api/user/bind/user/' + options.user, json=bindinfo)
         if not r.status_code == 200:

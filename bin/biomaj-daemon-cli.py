@@ -39,8 +39,8 @@ def main():
     --about-me: Get my info
         [MANDATORY]
         --proxy http://x.y.z
-        --login XX
-        --password XX
+        --user-login XX
+        --user-password XX
 
     --update-status: get status of an update
         [MANDATORY]
