@@ -814,7 +814,7 @@ def biomaj_daemon():
     return jsonify({'status': res, 'msg': msg})
 
 
-@app.route('/api/daemon/metrics', methods=['GET'])
+@app.route('/metrics', methods=['GET'])
 def metrics():
     return generate_latest()
 
