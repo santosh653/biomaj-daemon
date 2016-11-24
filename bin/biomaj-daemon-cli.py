@@ -35,6 +35,8 @@ def main():
 
     --proxy: BioMAJ daemon url (http://x.y.z)
 
+    --trace: Trace workflow in Zipkin server
+
     --api-key: User API key to authenticate against proxy
 
     --about-me: Get my info
