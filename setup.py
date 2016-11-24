@@ -44,6 +44,7 @@ config = {
     'install_requires': [
                          'biomaj',
                          'biomaj-user',
+                         'biomaj-zipkin'
                          'redis',
                          'PyYAML',
                          'flask',

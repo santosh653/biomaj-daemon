@@ -13,6 +13,7 @@ from biomaj.bank import Bank
 from biomaj.notify import Notify
 from biomaj_core.utils import Utils
 
+from biomaj_zipkin.zipkin import Zipkin
 
 class Options(object):
     def __init__(self, d):
@@ -38,6 +39,8 @@ class DaemonService(object):
         with open(config_file, 'r') as ymlfile:
             self.config = yaml.load(ymlfile)
             Utils.service_config_override(self.config)
+
+        Zipkin.set_config(self.config)
 
         BiomajConfig.load_config(self.config['biomaj']['config'])
 
@@ -127,6 +130,18 @@ class DaemonService(object):
                 if 'removeall' in msg and msg['removeall']:
                     info = 'removeall'
                 logging.info('Biomaj:Daemon:' + msg['bank'] + ':' + str(info))
+
+                span = None
+                if 'trace' in msg and msg['trace']:
+                    span = Zipkin('biomaj', 'workflow')
+                    span.add_binary_annotation('operation', info)
+                    msg['traceId'] = span.get_trace_id()
+                    msg['spanId'] = span.get_span_id()
+
                 self.callback_messages(msg)
+
+                if span:
+                    span.trace()
+
                 logging.info('Biomaj:Daemon:' + msg['bank'] + ':over')
             time.sleep(1)

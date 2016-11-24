@@ -117,7 +117,8 @@ OPTIONS_PARAMS = {
     'visibility': None,
     'maintenance': None,
     'version': False,
-    'statusko': False
+    'statusko': False,
+    'trace': False
 }
 
 class Options(object):
@@ -126,8 +127,6 @@ class Options(object):
         for key in list(OPTIONS_PARAMS.keys()):
             if not self.has_option(key):
                 setattr(self, key, OPTIONS_PARAMS[key])
-
-
 
     def has_option(self, option):
         if hasattr(self, option):

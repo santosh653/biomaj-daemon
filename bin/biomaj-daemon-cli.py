@@ -22,6 +22,7 @@ def main():
     parser.add_argument('--api-key', dest="apikey", help="User API Key")
     parser.add_argument('--update-status', dest="updatestatus", action="store_true", default=False, help="Get update status")
     parser.add_argument('--update-cancel', dest="updatecancel", action="store_true", default=False, help="Cancel current bank update")
+    parser.add_argument('--trace', dest="trace", action="store_true", help="Trace operation in zipkin")
 
     options = Options()
     parser.parse_args(namespace=options)
