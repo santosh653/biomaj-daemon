@@ -22,6 +22,8 @@ from prometheus_client.exposition import generate_latest
 
 import consul
 import redis
+from pymongo import MongoClient
+import pika
 
 from tabulate import tabulate
 
@@ -43,6 +45,9 @@ with open(config_file, 'r') as ymlfile:
     Utils.service_config_override(config)
 
 BiomajConfig.load_config(config['biomaj']['config'])
+
+last_status_check = None
+last_status = None
 
 data_dir = BiomajConfig.global_config.get('GENERAL', 'data.dir')
 if not os.path.exists(data_dir):
@@ -120,6 +125,7 @@ OPTIONS_PARAMS = {
     'statusko': False,
     'trace': False
 }
+
 
 class Options(object):
     def __init__(self, d):
@@ -764,6 +770,171 @@ def biomaj_client_action(options):
 
     if options.aboutme:
         return biomaj_user_info(options)
+
+
+@app.route('/api/daemon/status', methods=['GET'])
+def biomaj_status_info():
+    '''
+    if last_status_check is not None:
+        cur = datetime.datetime.now()
+        if (cur - last_status_check).total_seconds() < 10:
+            return status
+    last_status_check = datetime.datetime.now()
+    '''
+    status = {
+        'status': [{'service': 'biomaj-public-proxy', 'status': 1, 'count': 1}],
+        'biomaj_services': [],
+        'general_services': [{
+            'id': 'biomaj-public-proxy',
+            'host': '',
+            'status': True
+        }]
+    }
+
+    # Check redis
+    logging.debug("Status: check redis")
+    redis_ok = False
+    try:
+        pong = redis_client.ping()
+        if pong:
+            redis_ok = True
+    except Exception as e:
+        logging.error('Failed to ping redis: ' + str(e))
+    if not redis_ok:
+        status['status'].append({'service': 'biomaj-redis', 'status': -1, 'count': 0})
+    else:
+        status['status'].append({'service': 'biomaj-redis', 'status': 1, 'count': 1})
+        status['general_services'].append({
+                    'id': 'biomaj-redis',
+                    'host': config['redis']['host'],
+                    'status': True
+        })
+
+    # Check internal proxy
+    r = requests.get(config['web']['local_endpoint'] + '/api/user')
+    if not r.status_code == 200:
+        status['status'].append({'service': 'biomaj-internal-proxy', 'status': -1, 'count': 0})
+    else:
+        status['status'].append({'service': 'biomaj-internal-proxy', 'status': 1, 'count': 1})
+        status['general_services'].append({
+                    'id': 'biomaj-internal-proxy',
+                    'host': config['web']['local_endpoint'],
+                    'status': True
+        })
+
+    # Check mongo
+    logging.debug("Status: check mongo")
+    if 'mongo' in config:
+        mongo_ok = False
+        try:
+            biomaj_mongo = MongoClient(config['mongo']['url'])
+            biomaj_mongo.server_info()
+            mongo_ok = True
+        except Exception as e:
+            logging.error('Failed to connect to mongo')
+        if not mongo_ok:
+            status['status'].append({'service': 'biomaj-mongo', 'status': -1, 'count': 0})
+        else:
+            status['status'].append({'service': 'biomaj-mongo', 'status': 1, 'count': 1})
+            status['general_services'].append({
+                        'id': 'biomaj-mongo',
+                        'host': config['mongo']['url'],
+                        'status': True
+            })
+
+    # Check rabbitmq
+    logging.debug("Status: check rabbit")
+    if 'rabbitmq' in config and 'host' in config['rabbitmq'] and config['rabbitmq']['host']:
+        rabbit_ok = False
+        channel = None
+        try:
+            connection = None
+            rabbitmq_port = config['rabbitmq']['port']
+            rabbitmq_user = config['rabbitmq']['user']
+            rabbitmq_password = config['rabbitmq']['password']
+            rabbitmq_vhost = config['rabbitmq']['virtual_host']
+            if rabbitmq_user:
+                credentials = pika.PlainCredentials(rabbitmq_user, rabbitmq_password)
+                connection = pika.BlockingConnection(pika.ConnectionParameters(config['rabbitmq']['host'], rabbitmq_port, rabbitmq_vhost, credentials))
+            else:
+                connection = pika.BlockingConnection(pika.ConnectionParameters(config['rabbitmq']['host']))
+            channel = connection.channel()
+            rabbit_ok = True
+        except Exception as e:
+            logging.error('Rabbitmq connection error: ' + str(e))
+        finally:
+            if channel:
+                channel.close()
+        if not rabbit_ok:
+            status['status'].append({'service': 'biomaj-rabbitmq', 'status': -1, 'count': 0})
+        else:
+            status['status'].append({'service': 'biomaj-rabbitmq', 'status': 1, 'count': 1})
+            status['general_services'].append({
+                        'id': 'biomaj-rabbitmq',
+                        'host': config['rabbitmq']['host'],
+                        'status': True
+            })
+
+    logging.debug("Status: check consul services")
+    r = requests.get('http://' + config['consul']['host'] + ':8500/v1/agent/services')
+    if not r.status_code == 200:
+        status['status'].append({'service': 'biomaj-consul', 'status': -1, 'count': 0})
+        last_status = status
+        return status
+
+    status['status'].append({'service': 'biomaj-consul', 'status': 1, 'count': 1})
+    status['general_services'].append({
+                'id': 'biomaj-consul',
+                'host': config['consul']['host'],
+                'status': True
+    })
+
+    consul_services = r.json()
+    services = []
+    for consul_service in list(consul_services.keys()):
+        current_service = consul_services[consul_service]['Service']
+        if current_service in services or current_service == 'consul':
+            continue
+        else:
+            services.append(current_service)
+        check_r = requests.get('http://' + config['consul']['host'] + ':8500/v1/health/service/' + consul_services[consul_service]['Service'])
+        if not check_r.status_code == 200:
+            status['status'].append({'service': 'biomaj-consul', 'status': -1, 'count': 0})
+            last_status = status
+            return status
+        checks = check_r.json()
+        nb_service = 0
+        nb_service_ok = 0
+        for service_check in checks:
+            nb_service += 1
+            check_status = True
+            for check in service_check['Checks']:
+                if check['Status'] != 'passing':
+                    check_status = False
+                    break
+            if check_status:
+                nb_service_ok += 1
+            status['biomaj_services'].append({
+                'id': service_check['Service']['Service'],
+                'host': service_check['Service']['Address'],
+                'status': check_status
+            })
+        check_status = -1
+        if nb_service == nb_service_ok:
+            check_status = 1
+        else:
+            check_status = 0
+        status['status'].append({'service': consul_services[consul_service]['Service'], 'count': nb_service, 'status': check_status})
+
+    # Check missing services
+    biomaj_services = ['biomaj-watcher', 'biomaj-daemon', 'biomaj-download', 'biomaj-process', 'biomaj-user']
+    for biomaj_service in biomaj_services:
+        if biomaj_service not in services:
+            status['status'].append({'service': biomaj_service, 'count': 0, 'status': -1})
+
+    last_status = status
+
+    return jsonify(status)
 
 
 @app.route('/api/daemon', methods=['POST'])
