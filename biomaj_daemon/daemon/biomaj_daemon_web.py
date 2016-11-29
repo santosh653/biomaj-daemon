@@ -28,6 +28,8 @@ import pika
 from tabulate import tabulate
 
 from biomaj.bank import Bank
+from biomaj.schema_version import SchemaVersion
+
 from biomaj.options import Options as BmajOptions
 from biomaj_core.config import BiomajConfig
 from biomaj_core.utils import Utils
@@ -71,6 +73,9 @@ redis_client = redis.StrictRedis(
     db=config['redis']['db'],
     decode_responses=True
 )
+
+logging.info("Check database schema and upgrade if necessary")
+SchemaVersion.migrate_pendings()
 
 app = Flask(__name__)
 
