@@ -592,9 +592,9 @@ def biomaj_user_info(options, config):
         return (False, 'Missing proxy information')
     bindinfo = {'type': 'password', 'value': options.userpassword}
     try:
-        r = requests.post(config['web']['local_endpoint'] + '/api/user/bind/user/' + options.user, json=bindinfo)
+        r = requests.post(config['web']['local_endpoint'] + '/api/user/bind/user/' + options.userlogin, json=bindinfo)
         if not r.status_code == 200:
-            abort(401, {'message': 'Invalid credentials'})
+            return (False, 'Invalid credentials')
         user = r.json()['user']
     except Exception as e:
         return (False, 'Connection error to proxy: ' + str(e))
