@@ -1,22 +1,18 @@
-import ssl
 import os
 import pkg_resources
 import shutil
-import yaml
 import configparser
-import logging
 import json
 import datetime
 import time
+import redis
 
 import requests
 
 from tabulate import tabulate
 
 from biomaj.bank import Bank
-from biomaj.options import Options as BmajOptions
 from biomaj_core.config import BiomajConfig
-from biomaj_core.utils import Utils
 from biomaj.workflow import Workflow
 from biomaj.workflow import UpdateWorkflow
 from biomaj.workflow import RemoveWorkflow
@@ -352,7 +348,7 @@ def biomaj_bank_update(options, config):
             if not options.proxy:
                 res = bmaj.update(depends=True)
                 return (res, '')
-            res = biomaj_bank_update_request(options)
+            res = biomaj_bank_update_request(options, config)
             if not res:
                 msg += 'Failed to send update request for ' + options.bank + '\n'
 
@@ -418,12 +414,12 @@ def biomaj_remove(options, config):
         if not options.proxy:
             res = bmaj.removeAll(options.force)
             return (res, '')
-        res = biomaj_remove_request(options)
+        res = biomaj_remove_request(options, config)
     else:
         if not options.proxy:
             res = bmaj.remove(options.release)
             return (res, '')
-        res = biomaj_remove_request(options)
+        res = biomaj_remove_request(options, config)
     if not res:
         return (False, 'Failed to send removal request')
     return (True, 'Bank removal request sent')
@@ -448,7 +444,7 @@ def biomaj_remove_pending(options, config):
     if not options.proxy:
         res = bmaj.remove_pending(options.release)
         return (res, '')
-    res = biomaj_remove_pending_request(options)
+    res = biomaj_remove_pending_request(options, config)
     if not res:
         return (False, 'Failed to send removal request')
     return (True, 'Request sent')
