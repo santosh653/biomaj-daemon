@@ -1,3 +1,5 @@
+3.0.3:
+  Fix missing parameters
 3.0.2:
   Move options to management to utils for reuse
   Fix --about-me
