@@ -392,7 +392,7 @@ def biomaj_remove_request(options, config):
     '''
     Send remove request to rabbitmq
     '''
-    return biomaj_send_message(options)
+    return biomaj_send_message(options, config)
 
 
 def biomaj_remove(options, config):
