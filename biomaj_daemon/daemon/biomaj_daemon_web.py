@@ -311,12 +311,14 @@ def biomaj_status_info():
         check_status = -1
         if nb_service == nb_service_ok:
             check_status = 1
+        elif nb_service_ok == 0:
+            check_status = -1
         else:
             check_status = 0
         status['status'].append({'service': consul_services[consul_service]['Service'], 'count': nb_service, 'status': check_status})
 
     # Check missing services
-    biomaj_services = ['biomaj-watcher', 'biomaj-daemon', 'biomaj-download', 'biomaj-process', 'biomaj-user']
+    biomaj_services = ['biomaj-watcher', 'biomaj-daemon', 'biomaj-download', 'biomaj-process', 'biomaj-user', 'biomaj-cron', 'biomaj-ftp']
     for biomaj_service in biomaj_services:
         if biomaj_service not in services:
             status['status'].append({'service': biomaj_service, 'count': 0, 'status': -1})
