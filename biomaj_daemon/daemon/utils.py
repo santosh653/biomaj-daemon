@@ -16,7 +16,7 @@ from biomaj_core.config import BiomajConfig
 from biomaj.workflow import Workflow
 from biomaj.workflow import UpdateWorkflow
 from biomaj.workflow import RemoveWorkflow
-
+from biomaj.notify import Notify
 
 def biomaj_version(options, config):
     '''
@@ -347,6 +347,7 @@ def biomaj_bank_update(options, config):
             msg += 'Bank update request sent for ' + options.bank + '\n'
             if not options.proxy:
                 res = bmaj.update(depends=True)
+                Notify.notifyBankAction(bmaj)
                 return (res, '')
             res = biomaj_bank_update_request(options, config)
             if not res:
@@ -418,6 +419,7 @@ def biomaj_remove(options, config):
     else:
         if not options.proxy:
             res = bmaj.remove(options.release)
+            Notify.notifyBankAction(bmaj)
             return (res, '')
         res = biomaj_remove_request(options, config)
     if not res:
