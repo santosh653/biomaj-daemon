@@ -1,5 +1,6 @@
 3.0.4:
   Fix status page with other services
+  Add missing README in package
 3.0.3:
   Fix missing parameters
 3.0.2:

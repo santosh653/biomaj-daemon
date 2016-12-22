@@ -5,8 +5,12 @@ import traceback
 import datetime
 import time
 import json
+import threading
 
 import redis
+import consul
+from flask import Flask
+from flask import jsonify
 
 from biomaj_core.config import BiomajConfig
 from biomaj.bank import Bank
@@ -14,6 +18,27 @@ from biomaj.notify import Notify
 from biomaj_core.utils import Utils
 
 from biomaj_zipkin.zipkin import Zipkin
+
+
+app = Flask(__name__)
+
+
+@app.route('/api/daemon-message')
+def ping():
+    return jsonify({'msg': 'pong'})
+
+
+def start_web(config):
+    app.run(host='0.0.0.0', port=config['web']['port'])
+
+
+def consul_declare(config):
+    if config['consul']['host']:
+        consul_agent = consul.Consul(host=config['consul']['host'])
+        consul_agent.agent.service.register('biomaj-daemon-message', service_id=config['consul']['id'], address=config['web']['hostname'], port=config['web']['port'], tags=['biomaj'])
+        check = consul.Check.http(url='http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon-message', interval=20)
+        consul_agent.agent.check.register(config['consul']['id'] + '_check', check=check, service_id=config['consul']['id'])
+
 
 class Options(object):
     def __init__(self, d):
@@ -39,6 +64,11 @@ class DaemonService(object):
         with open(config_file, 'r') as ymlfile:
             self.config = yaml.load(ymlfile)
             Utils.service_config_override(self.config)
+
+        consul_declare(self.config)
+
+        web_thread = threading.Thread(target=start_web, args=(self.config,))
+        web_thread.start()
 
         Zipkin.set_config(self.config)
 
@@ -68,7 +98,7 @@ class DaemonService(object):
 
     def execute(self, options):
         '''
-        List remote content
+        Execute update or remove command
         '''
         start_time = datetime.datetime.now()
         start_time = time.mktime(start_time.timetuple())

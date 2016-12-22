@@ -1,13 +1,7 @@
 import ssl
 import os
-import pkg_resources
-import shutil
 import yaml
-import configparser
 import logging
-import json
-import datetime
-import time
 
 from flask import Flask
 from flask import jsonify
@@ -25,17 +19,11 @@ import redis
 from pymongo import MongoClient
 import pika
 
-from tabulate import tabulate
-
-from biomaj.bank import Bank
 from biomaj.schema_version import SchemaVersion
 
 from biomaj.options import Options as BmajOptions
 from biomaj_core.config import BiomajConfig
 from biomaj_core.utils import Utils
-from biomaj.workflow import Workflow
-from biomaj.workflow import UpdateWorkflow
-from biomaj.workflow import RemoveWorkflow
 
 from biomaj_daemon.daemon.utils import biomaj_client_action
 
@@ -194,9 +182,9 @@ def biomaj_status_info():
     else:
         status['status'].append({'service': 'biomaj-redis', 'status': 1, 'count': 1})
         status['general_services'].append({
-                    'id': 'biomaj-redis',
-                    'host': config['redis']['host'],
-                    'status': True
+            'id': 'biomaj-redis',
+            'host': config['redis']['host'],
+            'status': True
         })
 
     # Check internal proxy
@@ -206,9 +194,9 @@ def biomaj_status_info():
     else:
         status['status'].append({'service': 'biomaj-internal-proxy', 'status': 1, 'count': 1})
         status['general_services'].append({
-                    'id': 'biomaj-internal-proxy',
-                    'host': config['web']['local_endpoint'],
-                    'status': True
+            'id': 'biomaj-internal-proxy',
+            'host': config['web']['local_endpoint'],
+            'status': True
         })
 
     # Check mongo
@@ -226,9 +214,9 @@ def biomaj_status_info():
         else:
             status['status'].append({'service': 'biomaj-mongo', 'status': 1, 'count': 1})
             status['general_services'].append({
-                        'id': 'biomaj-mongo',
-                        'host': config['mongo']['url'],
-                        'status': True
+                'id': 'biomaj-mongo',
+                'host': config['mongo']['url'],
+                'status': True
             })
 
     # Check rabbitmq
@@ -259,9 +247,9 @@ def biomaj_status_info():
         else:
             status['status'].append({'service': 'biomaj-rabbitmq', 'status': 1, 'count': 1})
             status['general_services'].append({
-                        'id': 'biomaj-rabbitmq',
-                        'host': config['rabbitmq']['host'],
-                        'status': True
+                'id': 'biomaj-rabbitmq',
+                'host': config['rabbitmq']['host'],
+                'status': True
             })
 
     logging.debug("Status: check consul services")
@@ -273,9 +261,9 @@ def biomaj_status_info():
 
     status['status'].append({'service': 'biomaj-consul', 'status': 1, 'count': 1})
     status['general_services'].append({
-                'id': 'biomaj-consul',
-                'host': config['consul']['host'],
-                'status': True
+        'id': 'biomaj-consul',
+        'host': config['consul']['host'],
+        'status': True
     })
 
     consul_services = r.json()
@@ -393,6 +381,7 @@ def add_metrics():
             biomaj_metric.labels(proc['bank']).inc()
             biomaj_time_metric.labels(proc['bank']).set(proc['execution_time'])
     return jsonify({'msg': 'OK'})
+
 
 if __name__ == "__main__":
     context = None
