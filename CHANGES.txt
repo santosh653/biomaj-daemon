@@ -1,3 +1,5 @@
+3.0.6:
+  Fix logging for monolithic setup
 3.0.5:
   Fix for python 2.x
 3.0.4:
