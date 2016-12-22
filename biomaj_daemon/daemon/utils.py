@@ -1,11 +1,11 @@
 import os
 import pkg_resources
 import shutil
-import configparser
 import json
 import datetime
 import time
 import redis
+import sys
 
 import requests
 
@@ -17,6 +17,11 @@ from biomaj.workflow import Workflow
 from biomaj.workflow import UpdateWorkflow
 from biomaj.workflow import RemoveWorkflow
 from biomaj.notify import Notify
+
+if sys.version < '3':
+    import ConfigParser as configparser
+else:
+    import configparser
 
 def biomaj_version(options, config):
     '''
