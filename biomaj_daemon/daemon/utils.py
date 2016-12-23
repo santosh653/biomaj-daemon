@@ -326,9 +326,9 @@ def biomaj_whatsup(options, config):
     whatsup = []
     for daemon in list(daemons_status.keys()):
         if daemons_status[daemon]:
-            # daemonname:bank:action
+            # bank:action
             proc = daemons_status[daemon].split(':')
-            if len(proc) == 3:
+            if len(proc) == 2:
                 whatsup.append(proc)
     if whatsup:
         msg = tabulate(whatsup, ['daemon', 'action', 'bank'], tablefmt="simple")
