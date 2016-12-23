@@ -319,7 +319,7 @@ def biomaj_status_info():
 @app.route('/api/daemon', methods=['POST'])
 def biomaj_daemon():
     '''
-    List users
+    Execute a command request (bank update, removal, ...)
     '''
     apikey = request.headers.get('Authorization')
     token = None
