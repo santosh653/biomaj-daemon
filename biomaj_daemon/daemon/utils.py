@@ -311,6 +311,8 @@ def biomaj_bank_update_request(options, config):
 
 
 def biomaj_whatsup(options, config):
+    if not options.proxy:
+        return (False, 'option not allowed without --proxy option')
     redis_client = redis.StrictRedis(
         host=config['redis']['host'],
         port=config['redis']['port'],
