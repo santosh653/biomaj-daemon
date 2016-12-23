@@ -1,6 +1,6 @@
 # About
 
-Experimental (in progress) microservice to manage biomaj.
+Microservice to manage biomaj, acts as a frontend to receive biomaj-cli commands and execute operations
 
 Needs mongo and redis
 
