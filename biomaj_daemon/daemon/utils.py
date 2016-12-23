@@ -310,6 +310,29 @@ def biomaj_bank_update_request(options, config):
     return biomaj_send_message(options, config)
 
 
+def biomaj_whatsup(options, config):
+    redis_client = redis.StrictRedis(
+        host=config['redis']['host'],
+        port=config['redis']['port'],
+        db=config['redis']['db'],
+        decode_responses=True
+    )
+    if not redis_client:
+        return (False, 'Redis not configured')
+    daemons_status = redis_client.hgetall(config['redis']['prefix']:'daemons:status')
+    msg = 'All daemons pending'
+    whatsup = []
+    for daemon in list(daemons_status.keys()):
+        if daemons_status[daemon]:
+            # daemonname:bank:action
+            proc = daemons_status[daemon].split(':')
+            if len(proc) == 3:
+                whatsup.append(proc)
+    if whatsup:
+        msg = tabulate(whatsup, ['daemon', 'action', 'bank'], tablefmt="simple")
+    return (True, msg)
+
+
 def biomaj_send_message(options, config):
     '''
     Send message to rabbitmq listener
@@ -618,6 +641,9 @@ def biomaj_client_action(options, config=None):
     check_options(options, config)
     if options.version:
         return biomaj_version(options, config)
+
+    if options.whatsup:
+        return biomaj_whatsup(options, config)
 
     if options.maintenance:
         return biomaj_maintenance(options, config)

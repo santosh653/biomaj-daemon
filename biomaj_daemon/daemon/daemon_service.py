@@ -96,6 +96,16 @@ class DaemonService(object):
     def on_executed_callback(self, func):
         self.executed_callback = func
 
+    def __start_action(self, bank, action):
+        #config['consul']['id']
+        whatsup = bank + ':' + str(action)
+        self.redis_client.hset(self.config['redis']['prefix']:'daemons:status', self.config['consul']['id'], whatsup)
+        # Expires in 7 days if no update
+        self.redis_client.expire(self.config['redis']['prefix']:'daemons:status', 3600*24*7)
+
+    def __end_action(self):
+        self.redis_client.hset(self.config['redis']['prefix']:'daemons:status', self.config['consul']['id'], 'pending')
+
     def execute(self, options):
         '''
         Execute update or remove command
@@ -110,13 +120,16 @@ class DaemonService(object):
             options.no_log = False
             if options.update:
                 action = 'update'
+                self.__start_action(options.bank, action)
                 bmaj = Bank(options.bank, options)
                 self.logger.debug('Log file: ' + bmaj.config.log_file)
                 error = bmaj.update(depends=True)
                 is_updated = bmaj.session.get('update')
                 Notify.notifyBankAction(bmaj)
+                self.__end_action()
             elif options.remove or options.removeall:
                 action = 'remove'
+                self.__start_action(options.bank, action)
                 if options.removeall:
                     bmaj = Bank(options.bank, options, no_log=True)
                     print('Log file: ' + bmaj.config.log_file)
@@ -126,6 +139,7 @@ class DaemonService(object):
                     self.logger.debug('Log file: ' + bmaj.config.log_file)
                     error = bmaj.remove(options.release)
                     Notify.notifyBankAction(bmaj)
+                self.__end_action()
         except Exception as e:
             self.logger.exception('Exception: ' + str(e))
             error = True
