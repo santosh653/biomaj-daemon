@@ -35,9 +35,22 @@ def start_web(config):
 def consul_declare(config):
     if config['consul']['host']:
         consul_agent = consul.Consul(host=config['consul']['host'])
-        consul_agent.agent.service.register('biomaj-daemon-message', service_id=config['consul']['id'], address=config['web']['hostname'], port=config['web']['port'], tags=['biomaj'])
-        check = consul.Check.http(url='http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon-message', interval=20)
-        consul_agent.agent.check.register(config['consul']['id'] + '_check', check=check, service_id=config['consul']['id'])
+        consul_agent.agent.service.register(
+            'biomaj-daemon-message',
+            service_id=config['consul']['id'],
+            address=config['web']['hostname'],
+            port=config['web']['port'],
+            tags=['biomaj']
+        )
+        check = consul.Check.http(
+            url='http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon-message',
+            interval=20
+        )
+        consul_agent.agent.check.register(
+            config['consul']['id'] + '_check',
+            check=check,
+            service_id=config['consul']['id']
+        )
 
 
 class Options(object):
@@ -97,14 +110,24 @@ class DaemonService(object):
         self.executed_callback = func
 
     def __start_action(self, bank, action):
-        #config['consul']['id']
         whatsup = bank + ':' + str(action)
-        self.redis_client.hset(self.config['redis']['prefix'] + ':daemons:status', self.config['consul']['id'], whatsup)
+        self.redis_client.hset(
+            self.config['redis']['prefix'] + ':daemons:status',
+            self.config['consul']['id'],
+            whatsup
+        )
         # Expires in 7 days if no update
-        self.redis_client.expire(self.config['redis']['prefix'] + ':daemons:status', 3600*24*7)
+        self.redis_client.expire(
+            self.config['redis']['prefix'] + ':daemons:status',
+            3600*24*7
+        )
 
     def __end_action(self):
-        self.redis_client.hset(self.config['redis']['prefix'] + ':daemons:status', self.config['consul']['id'], 'pending')
+        self.redis_client.hset(
+            self.config['redis']['prefix'] + ':daemons:status',
+            self.config['consul']['id'],
+            'pending'
+        )
 
     def execute(self, options):
         '''
@@ -113,7 +136,7 @@ class DaemonService(object):
         start_time = datetime.datetime.now()
         start_time = time.mktime(start_time.timetuple())
 
-        error = None
+        is_ok = None
         is_updated = False
         action = None
         try:
@@ -123,7 +146,7 @@ class DaemonService(object):
                 self.__start_action(options.bank, action)
                 bmaj = Bank(options.bank, options)
                 self.logger.debug('Log file: ' + bmaj.config.log_file)
-                error = bmaj.update(depends=True)
+                is_ok = bmaj.update(depends=True)
                 is_updated = bmaj.session.get('update')
                 Notify.notifyBankAction(bmaj)
                 self.__end_action()
@@ -133,22 +156,27 @@ class DaemonService(object):
                 if options.removeall:
                     bmaj = Bank(options.bank, options, no_log=True)
                     print('Log file: ' + bmaj.config.log_file)
-                    error = bmaj.removeAll(options.force)
+                    is_ok = bmaj.removeAll(options.force)
                 else:
                     bmaj = Bank(options.bank, options)
                     self.logger.debug('Log file: ' + bmaj.config.log_file)
-                    error = bmaj.remove(options.release)
+                    is_ok = bmaj.remove(options.release)
                     Notify.notifyBankAction(bmaj)
                 self.__end_action()
         except Exception as e:
             self.logger.exception('Exception: ' + str(e))
-            error = True
+            is_ok = False
 
         end_time = datetime.datetime.now()
         end_time = time.mktime(end_time.timetuple())
 
         execution_time = end_time - start_time
-        return {'error': error, 'execution_time': execution_time, 'action': action, 'updated': is_updated}
+        return {
+            'error': not is_ok,
+            'execution_time': execution_time,
+            'action': action,
+            'updated': is_updated
+        }
 
     def callback_messages(self, body):
         '''
