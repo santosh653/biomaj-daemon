@@ -329,9 +329,11 @@ def biomaj_whatsup(options, config):
             # bank:action
             proc = daemons_status[daemon].split(':')
             if len(proc) == 2:
-                whatsup.append(proc)
+                whatsup.append([daemon] + proc)
+            else:
+                whatsup.append([daemon, ''] + proc)
     if whatsup:
-        msg = tabulate(whatsup, ['daemon', 'action', 'bank'], tablefmt="simple")
+        msg = tabulate(whatsup, ['daemon', 'bank', 'action'], tablefmt="simple")
     return (True, msg)
 
 
