@@ -104,14 +104,19 @@ class DaemonService(object):
         start_time = time.mktime(start_time.timetuple())
 
         error = None
+        is_updated = False
+        action = None
         try:
             options.no_log = False
             if options.update:
+                action = 'update'
                 bmaj = Bank(options.bank, options)
                 self.logger.debug('Log file: ' + bmaj.config.log_file)
                 error = bmaj.update(depends=True)
+                is_updated = bmaj.session.get('update')
                 Notify.notifyBankAction(bmaj)
             elif options.remove or options.removeall:
+                action = 'remove'
                 if options.removeall:
                     bmaj = Bank(options.bank, options, no_log=True)
                     print('Log file: ' + bmaj.config.log_file)
@@ -129,7 +134,7 @@ class DaemonService(object):
         end_time = time.mktime(end_time.timetuple())
 
         execution_time = end_time - start_time
-        return {'error': error, 'execution_time': execution_time}
+        return {'error': error, 'execution_time': execution_time, 'action': action, 'updated': is_updated}
 
     def callback_messages(self, body):
         '''

@@ -23,6 +23,7 @@ if sys.version < '3':
 else:
     import configparser
 
+
 def biomaj_version(options, config):
     '''
     Get biomaj version

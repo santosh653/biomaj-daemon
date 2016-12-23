@@ -69,9 +69,9 @@ SchemaVersion.migrate_pendings()
 
 app = Flask(__name__)
 
-biomaj_metric = Counter("biomaj_daemon_total", "Bank total update execution.", ['bank'])
-biomaj_error_metric = Counter("biomaj_daemon_errors", "Bank total update errors.", ['bank'])
-biomaj_time_metric = Gauge("biomaj_daemon_time", "Bank update execution time in seconds.", ['bank'])
+biomaj_metric = Counter("biomaj_daemon_total", "Bank total update execution.", ['bank', 'action', 'updated'])
+biomaj_error_metric = Counter("biomaj_daemon_errors", "Bank total update errors.", ['bank', 'action'])
+biomaj_time_metric = Gauge("biomaj_daemon_time", "Bank update execution time in seconds.", ['bank', 'action', 'updated'])
 
 
 def consul_declare(config):
@@ -371,15 +371,15 @@ def metrics():
 @app.route('/api/daemon/metrics', methods=['POST'])
 def add_metrics():
     '''
-    Expects a JSON request with an array of {'bank': 'bank_name', 'error': 'error_message', 'execution_time': seconds_to_execute}
+    Expects a JSON request with an array of {'bank': 'bank_name', 'error': 'error_message', 'execution_time': seconds_to_execute, 'action': 'update|remove', 'updated': 0|1}
     '''
     procs = request.get_json()
     for proc in procs:
         if 'error' in proc and proc['error']:
-            biomaj_error_metric.labels(proc['bank']).inc()
+            biomaj_error_metric.labels(proc['bank'], proc['action']).inc()
         else:
-            biomaj_metric.labels(proc['bank']).inc()
-            biomaj_time_metric.labels(proc['bank']).set(proc['execution_time'])
+            biomaj_metric.labels(proc['bank'], proc['action'], proc['updated']).inc()
+            biomaj_time_metric.labels(proc['bank'], proc['action'], proc['updated']).set(proc['execution_time'])
     return jsonify({'msg': 'OK'})
 
 

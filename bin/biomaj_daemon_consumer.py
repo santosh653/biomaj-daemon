@@ -25,6 +25,14 @@ def on_executed(bank, procs):
     else:
         for proc in procs:
             metric = {'bank': bank}
+            if 'action' in proc:
+                metric['action'] = proc['action']
+            else:
+                metric['action'] = 'none'
+            if 'updated' in proc:
+                metric['updated'] = proc['updated'] ? 1 : 0
+            else:
+                metric['updated'] = 0
             if 'error' in proc and proc['error']:
                 metric['error'] = 1
             else:
