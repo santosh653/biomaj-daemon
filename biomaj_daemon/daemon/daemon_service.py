@@ -99,12 +99,12 @@ class DaemonService(object):
     def __start_action(self, bank, action):
         #config['consul']['id']
         whatsup = bank + ':' + str(action)
-        self.redis_client.hset(self.config['redis']['prefix']:'daemons:status', self.config['consul']['id'], whatsup)
+        self.redis_client.hset(self.config['redis']['prefix'] + ':daemons:status', self.config['consul']['id'], whatsup)
         # Expires in 7 days if no update
-        self.redis_client.expire(self.config['redis']['prefix']:'daemons:status', 3600*24*7)
+        self.redis_client.expire(self.config['redis']['prefix'] + ':daemons:status', 3600*24*7)
 
     def __end_action(self):
-        self.redis_client.hset(self.config['redis']['prefix']:'daemons:status', self.config['consul']['id'], 'pending')
+        self.redis_client.hset(self.config['redis']['prefix'] + ':daemons:status', self.config['consul']['id'], 'pending')
 
     def execute(self, options):
         '''

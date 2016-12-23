@@ -319,7 +319,7 @@ def biomaj_whatsup(options, config):
     )
     if not redis_client:
         return (False, 'Redis not configured')
-    daemons_status = redis_client.hgetall(config['redis']['prefix']:'daemons:status')
+    daemons_status = redis_client.hgetall(config['redis']['prefix'] + ':daemons:status')
     msg = 'All daemons pending'
     whatsup = []
     for daemon in list(daemons_status.keys()):

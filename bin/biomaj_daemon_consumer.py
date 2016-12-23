@@ -30,7 +30,7 @@ def on_executed(bank, procs):
             else:
                 metric['action'] = 'none'
             if 'updated' in proc:
-                metric['updated'] = proc['updated'] ? 1 : 0
+                metric['updated'] = 1 if proc['updated'] else 0
             else:
                 metric['updated'] = 0
             if 'error' in proc and proc['error']:
