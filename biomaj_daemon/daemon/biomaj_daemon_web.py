@@ -118,7 +118,8 @@ OPTIONS_PARAMS = {
     'maintenance': None,
     'version': False,
     'statusko': False,
-    'trace': False
+    'trace': False,
+    'whatsup': False
 }
 
 
