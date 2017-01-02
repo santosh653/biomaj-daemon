@@ -10,10 +10,6 @@ Needs mongo and redis
 
     flake8 --ignore E501 biomaj_daemon
 
-# Prometheus metrics
-
-Endpoint: /api/download/metrics
-
 
 # Run
 
