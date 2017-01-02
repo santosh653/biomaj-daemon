@@ -5,5 +5,5 @@ redis
 PyYAML
 flask
 python-consul
-prometheus_client
+prometheus_client>=0.0.18
 requests

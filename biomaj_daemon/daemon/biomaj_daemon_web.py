@@ -13,6 +13,8 @@ import requests
 from prometheus_client import Counter
 from prometheus_client import Gauge
 from prometheus_client.exposition import generate_latest
+from prometheus_client import multiprocess
+from prometheus_client import CollectorRegistry
 
 import consul
 import redis
@@ -71,7 +73,7 @@ app = Flask(__name__)
 
 biomaj_metric = Counter("biomaj_daemon_total", "Bank total update execution.", ['bank', 'action', 'updated'])
 biomaj_error_metric = Counter("biomaj_daemon_errors", "Bank total update errors.", ['bank', 'action'])
-biomaj_time_metric = Gauge("biomaj_daemon_time", "Bank update execution time in seconds.", ['bank', 'action', 'updated'])
+biomaj_time_metric = Gauge("biomaj_daemon_time", "Bank update execution time in seconds.", ['bank', 'action', 'updated'], multiprocess_mode='all')
 
 
 def consul_declare(config):
@@ -366,7 +368,9 @@ def biomaj_daemon():
 
 @app.route('/metrics', methods=['GET'])
 def metrics():
-    return generate_latest()
+    registry = CollectorRegistry()
+    multiprocess.MultiProcessCollector(registry)
+    return generate_latest(registry)
 
 
 @app.route('/api/daemon/metrics', methods=['POST'])
