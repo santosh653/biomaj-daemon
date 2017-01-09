@@ -6,6 +6,7 @@ import datetime
 import time
 import redis
 import sys
+import logging
 
 import requests
 
@@ -276,9 +277,12 @@ def biomaj_status(options, config):
         # Headers of output table
         banks_list = [["Name", "Type(s)", "Release", "Visibility", "Last update"]]
         for bank in sorted(banks, key=lambda k: k['name']):
-            bank = Bank(bank['name'], options=options, no_log=True)
-            if bank.bank['properties']['visibility'] == 'public' or bank.is_owner():
-                banks_list.append(bank.get_bank_release_info()['info'])
+            try:
+                bank = Bank(bank['name'], options=options, no_log=True)
+                if bank.bank['properties']['visibility'] == 'public' or bank.is_owner():
+                    banks_list.append(bank.get_bank_release_info()['info'])
+            except Exception as e:
+                logging.error('Failed to load bank %s: %s' % (bank['name'], str(e)))
         msg += tabulate(banks_list, headers="firstrow", tablefmt="psql") + '\n'
     return (True, msg)
 
