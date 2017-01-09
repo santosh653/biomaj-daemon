@@ -1,3 +1,6 @@
+3.0.7:
+  Add whatsup support for non proxy config
+  Skip bank config with errors
 3.0.6:
   Fix logging for monolithic setup
   Add whatsup option

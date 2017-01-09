@@ -311,27 +311,47 @@ def biomaj_bank_update_request(options, config):
 
 
 def biomaj_whatsup(options, config):
-    if not options.proxy:
-        return (False, 'option not allowed without --proxy option')
-    redis_client = redis.StrictRedis(
-        host=config['redis']['host'],
-        port=config['redis']['port'],
-        db=config['redis']['db'],
-        decode_responses=True
-    )
-    if not redis_client:
-        return (False, 'Redis not configured')
-    daemons_status = redis_client.hgetall(config['redis']['prefix'] + ':daemons:status')
-    msg = 'All daemons pending'
+    redis_client = None
     whatsup = []
-    for daemon in list(daemons_status.keys()):
-        if daemons_status[daemon]:
-            # bank:action
-            proc = daemons_status[daemon].split(':')
-            if len(proc) == 2:
-                whatsup.append([daemon] + proc)
-            else:
-                whatsup.append([daemon, ''] + proc)
+
+    if options.proxy:
+        redis_client = redis.StrictRedis(
+            host=config['redis']['host'],
+            port=config['redis']['port'],
+            db=config['redis']['db'],
+            decode_responses=True
+        )
+        if not redis_client:
+            return (False, 'Redis not configured')
+
+        pending_len = redis_client.llen(config['redis']['prefix'] + ':queue')
+        if not pending_len:
+            pending_len = 0
+
+        whatsup.append(['queue', str(pending_len), 'waiting'])
+
+    if not options.proxy:
+        data_dir = BiomajConfig.global_config.get('GENERAL', 'data.dir')
+        lock_dir = data_dir
+        if BiomajConfig.global_config.has_option('GENERAL', 'lock.dir'):
+            lock_dir = BiomajConfig.global_config.get('GENERAL', 'lock.dir')
+        lock_files = [f for f in os.listdir(lock_dir) if os.path.isfile(os.path.join(lock_dir, f))]
+        for lock_file in lock_files:
+            bank_name = lock_file.replace('.lock', '')
+            whatsup.append(['system', str(bank_name), 'running'])
+        if not whatsup:
+            whatsup.append(['system', '', 'pending'])
+    else:
+        daemons_status = redis_client.hgetall(config['redis']['prefix'] + ':daemons:status')
+        msg = 'All daemons pending'
+        for daemon in list(daemons_status.keys()):
+            if daemons_status[daemon]:
+                # bank:action
+                proc = daemons_status[daemon].split(':')
+                if len(proc) == 2:
+                    whatsup.append([daemon] + proc)
+                else:
+                    whatsup.append([daemon, ''] + proc)
     if whatsup:
         msg = tabulate(whatsup, ['daemon', 'bank', 'action'], tablefmt="simple")
     return (True, msg)
