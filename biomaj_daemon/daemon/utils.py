@@ -494,7 +494,7 @@ def biomaj_remove_pending_request(options, config):
     '''
     Send remove pending request to rabbitmq
     '''
-    return biomaj_send_message(options)
+    return biomaj_send_message(options, config)
 
 
 def biomaj_remove_pending(options, config):
