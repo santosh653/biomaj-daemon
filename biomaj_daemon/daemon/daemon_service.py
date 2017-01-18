@@ -167,7 +167,7 @@ class DaemonService(object):
                     Notify.notifyBankAction(bmaj)
                 self.__end_action()
             elif options.removepending:
-                bmaj = Bank(options.bank, options, no_log=Tru)
+                bmaj = Bank(options.bank, options, no_log=True)
                 bmaj.remove_pending(options.release)
         except Exception as e:
             self.logger.exception('Exception: ' + str(e))
