@@ -395,6 +395,7 @@ def biomaj_bank_update(options, config):
         no_log = True
         if not options.proxy:
             no_log = False
+        logging.error('Options: '+str(options.__dict__))
         bmaj = Bank(bank, options=options, no_log=no_log)
         if bmaj.is_locked():
             return (False, 'Bank is locked due to an other action')
@@ -408,10 +409,11 @@ def biomaj_bank_update(options, config):
             if not options.proxy:
                 res = bmaj.update(depends=True)
                 Notify.notifyBankAction(bmaj)
-                return (res, '')
-            res = biomaj_bank_update_request(options, config)
+            else:
+                res = biomaj_bank_update_request(options, config)
             if not res:
                 msg += 'Failed to send update request for ' + options.bank + '\n'
+                gres = False
 
     if not gres:
         return (False, msg)

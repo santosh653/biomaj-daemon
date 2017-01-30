@@ -1,3 +1,5 @@
+3.0.8:
+  Fix #78, for multiple banks update in monolithic config, if one fails, next banks are not updated
 3.0.7:
   Add whatsup support for non proxy config
   Skip bank config with errors
