@@ -2,11 +2,13 @@ import ssl
 import os
 import yaml
 import logging
+from collections import deque
 
 from flask import Flask
 from flask import jsonify
 from flask import request
 from flask import abort
+from flask import Response
 
 import requests
 
@@ -26,6 +28,7 @@ from biomaj.schema_version import SchemaVersion
 from biomaj.options import Options as BmajOptions
 from biomaj_core.config import BiomajConfig
 from biomaj_core.utils import Utils
+from biomaj.bank import Bank
 
 from biomaj_daemon.daemon.utils import biomaj_client_action
 
@@ -121,7 +124,9 @@ OPTIONS_PARAMS = {
     'version': False,
     'statusko': False,
     'trace': False,
-    'whatsup': False
+    'whatsup': False,
+    'lastlog': None,
+    'tail': 100
 }
 
 
@@ -317,6 +322,57 @@ def biomaj_status_info():
     last_status = status
 
     return jsonify(status)
+
+@app.route('/api/daemon/bank/<bank>/log', methods=['GET'])
+def biomaj_bank_log(bank):
+    return biomaj_bank_log_tail(bank, 0)
+
+@app.route('/api/daemon/bank/<bank>/log/<tail>', methods=['GET'])
+def biomaj_bank_log_tail(bank, tail=100):
+    apikey = request.headers.get('Authorization')
+    token = None
+
+    if apikey:
+        bearer = apikey.split()
+        if bearer[0] == 'APIKEY':
+            token = bearer[1]
+    log_file = None
+    try:
+        user = None
+        options_object = Options(OPTIONS_PARAMS)
+        if token:
+            r = requests.get(config['web']['local_endpoint'] + '/api/user/info/apikey/' + token)
+            if not r.status_code == 200:
+                abort(404, {'message': 'Invalid API Key or connection issue'})
+            user = r.json()['user']
+            options_object = Options({'user': user['id']})
+
+        bank_log = Bank(bank, options=options_object, no_log=True)
+        if bank_log.bank['properties']['visibility'] != 'public' and not bank_log.is_owner():
+            abort(403, {'message': 'not authorized to access this bank'})
+        if 'status' not in bank_log.bank or 'log_file' not in bank_log.bank['status'] or not bank_log.bank['status']['log_file']['status']:
+            return "No log file available"
+        log_file = bank_log.bank['status']['log_file']['status']
+    except Exception as e:
+        logging.exception(e)
+        return "Failed to access log file: " + str(e)
+    if not log_file or not os.path.exists(log_file):
+        return "Cannot access log file %s" % (str(log_file))
+
+    def generate():
+        with open(log_file) as fp:
+            tail_l = int(tail)
+            if tail_l = 0:
+                for line in fp:
+                    yield line
+            else:
+                dq = deque(fp, maxlen=tail_l)
+                for line in dq:
+                    yield line
+        yield "##END_OF_LOG"
+
+    return Response(generate(), mimetype='text/plain')
+
 
 
 @app.route('/api/daemon', methods=['POST'])

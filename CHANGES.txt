@@ -1,5 +1,6 @@
 3.0.8:
   Fix #78, for multiple banks update in monolithic config, if one fails, next banks are not updated
+  Add /api/daemon/bank/x/log[/y] endpoint to get last bank session log file
 3.0.7:
   Add whatsup support for non proxy config
   Skip bank config with errors
