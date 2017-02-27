@@ -395,7 +395,7 @@ def biomaj_bank_update(options, config):
         no_log = True
         if not options.proxy:
             no_log = False
-        logging.error('Options: '+str(options.__dict__))
+        # logging.debug('Options: '+str(options.__dict__))
         bmaj = Bank(bank, options=options, no_log=no_log)
         if bmaj.is_locked():
             return (False, 'Bank is locked due to an other action')
@@ -471,6 +471,9 @@ def biomaj_remove(options, config):
     no_log = True
     if not options.proxy:
         no_log = False
+    # If removeall, do not set logs as log dir will be deleted
+    if options.removeall:
+        no_log = True
     bmaj = Bank(options.bank, options=options, no_log=no_log)
     if bmaj.is_locked():
         return (False, 'Bank is locked due to an other action')

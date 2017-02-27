@@ -1,3 +1,6 @@
+3.0.9:
+  Fix #1 remove debug log
+  Fix #2 log dir not removed with --remove-all if proxy option not set
 3.0.8:
   Fix #78, for multiple banks update in monolithic config, if one fails, next banks are not updated
   Add /api/daemon/bank/x/log[/y] endpoint to get last bank session log file
