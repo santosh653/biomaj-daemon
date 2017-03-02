@@ -362,7 +362,7 @@ def biomaj_bank_log_tail(bank, tail=100):
     def generate():
         with open(log_file) as fp:
             tail_l = int(tail)
-            if tail_l = 0:
+            if tail_l == 0:
                 for line in fp:
                     yield line
             else:

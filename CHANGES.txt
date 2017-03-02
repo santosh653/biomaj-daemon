@@ -1,3 +1,5 @@
+3.0.10:
+  Fix tail endpoint syntax
 3.0.9:
   Fix #1 remove debug log
   Fix #2 log dir not removed with --remove-all if proxy option not set
