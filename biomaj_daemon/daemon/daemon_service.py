@@ -21,6 +21,8 @@ from biomaj_zipkin.zipkin import Zipkin
 
 
 app = Flask(__name__)
+app_log = logging.getLogger('werkzeug')
+app_log.setLevel(logging.ERROR)
 
 
 @app.route('/api/daemon-message')
