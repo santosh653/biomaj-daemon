@@ -1,3 +1,5 @@
+3.0.12:
+  Add biomaj_daemon_consumer.py to python scripts for install with package
 3.0.11:
   Disable daemon web service logging
 3.0.10:
