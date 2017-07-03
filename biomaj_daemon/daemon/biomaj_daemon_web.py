@@ -154,7 +154,7 @@ class Options(object):
 
 @app.route('/api/daemon', methods=['GET'])
 def ping():
-    return jsonify({'msg': 'pong'})
+    return jsonify({'msg': 'pong-ping'})
 
 
 @app.route('/api/daemon/status', methods=['GET'])
@@ -442,6 +442,14 @@ def add_metrics():
             biomaj_metric.labels(proc['bank'], proc['action'], proc['updated']).inc()
             biomaj_time_metric.labels(proc['bank'], proc['action'], proc['updated']).set(proc['execution_time'])
     return jsonify({'msg': 'OK'})
+
+###HOOK###
+@app.route('/api/daemon/hook_bank', methods=['GET', 'POST'])
+def hook_bank():
+    if request.method == 'POST':
+        return jsonify({'msg': '###TEST : we are in the hook_bank function methods POST'})
+    else:
+        return jsonify({'msg': '###TEST : we are in the hook_bank function methods GET'})
 
 
 if __name__ == "__main__":
