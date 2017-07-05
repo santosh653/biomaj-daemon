@@ -32,6 +32,9 @@ from biomaj.bank import Bank
 
 from biomaj_daemon.daemon.utils import biomaj_client_action
 
+##HOOK db
+from biomaj.mongo_connector import MongoConnector
+
 config_file = 'config.yml'
 if 'BIOMAJ_CONFIG' in os.environ:
         config_file = os.environ['BIOMAJ_CONFIG']
@@ -42,6 +45,7 @@ with open(config_file, 'r') as ymlfile:
     Utils.service_config_override(config)
 
 BiomajConfig.load_config(config['biomaj']['config'])
+
 
 last_status_check = None
 last_status = None
@@ -154,7 +158,7 @@ class Options(object):
 
 @app.route('/api/daemon', methods=['GET'])
 def ping():
-    return jsonify({'msg': 'pong-ping'})
+    return jsonify({'msg': 'pong'})
 
 
 @app.route('/api/daemon/status', methods=['GET'])
@@ -227,6 +231,7 @@ def biomaj_status_info():
                 'status': True
             })
 
+    
     # Check rabbitmq
     logging.debug("Status: check rabbit")
     if 'rabbitmq' in config and 'host' in config['rabbitmq'] and config['rabbitmq']['host']:
@@ -445,11 +450,36 @@ def add_metrics():
 
 ###HOOK###
 @app.route('/api/daemon/hook_bank', methods=['GET', 'POST'])
-def hook_bank():
-    if request.method == 'POST':
-        return jsonify({'msg': '###TEST : we are in the hook_bank function methods POST'})
+def hook_bank(): 
+    ##Mongo connexion to acces hook_db
+    mongo = MongoClient(BiomajConfig.global_config.get('GENERAL', 'db.url'))
+    logging.error("###DEBUG in hook_bank")
+    if request.method == 'GET':
+        if MongoConnector.db is None:
+            MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),BiomajConfig.global_config.get('GENERAL', 'db.name'))
+        remote_hooks = MongoConnector.remote_hooks
+        remote_hook = remote_hooks.find_one({'name': 'testing_hook'})
+        if remote_hook is None:
+            remote_hook = { 
+                'name': 'testing_hook',
+                'hook': 'test'
+            }
+            remote_hook['_id'] = remote_hooks.insert(remote_hook)
+        return jsonify({'address': str(remote_hooks.find_one({'name': 'testing_hook'}))})
+        #return jsonify({'remote_hook': str(remote_hook)})
+        #return jsonify({'msg': '###TEST : we are in the hook_bank function methods GET'})
     else:
-        return jsonify({'msg': '###TEST : we are in the hook_bank function methods GET'})
+        
+        return jsonify({'address': 'http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon'})
+        #return jsonify({'msg': '###TEST : we are in the hook_bank function methods POST'})
+
+
+def get_bank_to_registered(url_bank):
+    try:
+        res = requests.get(url)
+        return res.json()
+    except:
+        return False
 
 
 if __name__ == "__main__":
