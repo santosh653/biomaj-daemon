@@ -34,6 +34,8 @@ from biomaj_daemon.daemon.utils import biomaj_client_action
 
 ##HOOK db
 from biomaj.mongo_connector import MongoConnector
+import pprint
+
 
 config_file = 'config.yml'
 if 'BIOMAJ_CONFIG' in os.environ:
@@ -465,7 +467,7 @@ def hook_bank():
                 'hook': 'test'
             }
             remote_hook['_id'] = remote_hooks.insert(remote_hook)
-        return jsonify({'address': str(remote_hooks.find_one({'name': 'testing_hook'}))})
+        return jsonify({'address': str(remote_hooks.find_one({'name': 'youhou testing_hook'}))})
         #return jsonify({'remote_hook': str(remote_hook)})
         #return jsonify({'msg': '###TEST : we are in the hook_bank function methods GET'})
     else:
@@ -473,6 +475,54 @@ def hook_bank():
         return jsonify({'address': 'http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon'})
         #return jsonify({'msg': '###TEST : we are in the hook_bank function methods POST'})
 
+@app.route('/api/daemon/hook_bank/template', methods=['GET'])
+def ping_template():
+    return jsonify({'msg': 'pong_template'})
+
+@app.route('/api/daemon/template/<bank>', methods=['GET'])
+def send_template(bank):
+    ##Send a template for a chosen bank
+    if request.method == 'GET':
+        db_fullname=bank
+        db_name=bank
+        protocol="protocol=ftp" 
+        server="server=" #adress in the config file of the biomaj instance
+        server_credentials="server_credentials="+str(bank)+":anonymous"
+        remote_files="remote.files=**/*"
+        #get the path to the bank
+        apikey = request.headers.get('Authorization')
+        token = None
+    
+        if apikey:
+            bearer = apikey.split()
+            if bearer[0] == 'APIKEY':
+                token = bearer[1]
+        log_file = None
+        try:
+            user = None
+            options_object = Options(OPTIONS_PARAMS)
+            if token:
+                r = requests.get(config['web']['local_endpoint'] + '/api/user/info/apikey/' + token)
+                if not r.status_code == 200:
+                    abort(404, {'message': 'Invalid API Key or connection issue'})
+                user = r.json()['user']
+                options_object = Options({'user': user['id']})
+
+            bank_dir = Bank(bank, options=options_object, no_log=True)
+            if bank_dir.bank['properties']['visibility'] != 'public' and not bank_dir.is_owner():
+                abort(403, {'message': 'not authorized to access this bank'})
+            #if 'sessions' not in bank_dir.bank or 'dir_version' not in bank_dir.bank['production'] or not bank_dir.bank['production']['dir_version']:
+            if 'dir_version' not in bank_dir.bank['production'][0] or 'dir_version' not in bank_dir.bank['sessions'][0]:
+                #['sessions] and [production] are list of dict
+                return "No data available\n"
+            bank_ftp_path = str(bank_dir.bank['production'][0]['dir_version'])
+        except Exception as e:
+            logging.exception(e)
+            return "Failed to access to databank: " + str(e) + "\n"
+        if not bank_ftp_path:
+            return "Cannot access to the path %s" % (str(bank_ftp_path))	
+
+        return protocol+"\n"+server+"\n"+remote_files+"\n"+server_credentials+"\n"+"remote_dir=/"+str(bank_ftp_path)+"/current/"+"\n"
 
 def get_bank_to_registered(url_bank):
     try:
