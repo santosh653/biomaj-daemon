@@ -451,7 +451,7 @@ def add_metrics():
     return jsonify({'msg': 'OK'})
 
 ###HOOK###
-@app.route('/api/daemon/hook_bank', methods=['GET', 'POST'])
+@app.route('/api/daemon/hook_bank/test', methods=['GET', 'POST'])
 def hook_bank(): 
     ##Mongo connexion to acces hook_db
     mongo = MongoClient(BiomajConfig.global_config.get('GENERAL', 'db.url'))
@@ -524,10 +524,11 @@ def send_template(bank):
 
         return protocol+"\n"+server+"\n"+remote_files+"\n"+server_credentials+"\n"+"remote_dir=/"+str(bank_ftp_path)+"/current/"+"\n"
 
-@app.route('/api/daemon/hook_bank/<bank>/<apikey>', methods=['GET', 'POST'])
-def register_hook_bank(bank,apikey):
+@app.route('/api/daemon/hook_bank/<bank>/<apikey>/<mail>', methods=['GET', 'POST'])
+def register_hook_bank(bank,apikey,mail):
     ##Mongo connexion to acces hook_db
-    apikey = request.headers.get('Authorization')
+    #apikey = request.headers.get('Authorization')
+    registered_api=apikey
     token = None
 	
     if apikey:
@@ -550,24 +551,62 @@ def register_hook_bank(bank,apikey):
             abort(403, {'message': 'not authorized to access this bank'})
 	
         mongo = MongoClient(BiomajConfig.global_config.get('GENERAL', 'db.url'))
+        if request.method == 'GET':
+            if MongoConnector.db is None:
+                MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),BiomajConfig.global_config.get('GENERAL', 'db.name'))
+            remote_hooks = MongoConnector.remote_hooks
+            remote_hook = remote_hooks.find_one({'name_bank': bank, 'user': registered_api})
+            if remote_hook is None:
+                remote_hook = {
+                    'name_bank': bank,
+                    'user': registered_api,
+                    'mail': mail
+                }
+                remote_hook['_id'] = remote_hooks.insert(remote_hook)
+                return jsonify({'test': str(remote_hooks.find_one({'name_bank': bank,'user': registered_api }))})
+            return "You are already registered for this databank\n" +str(remote_hooks.find_one({'name_bank': bank ,'user': registered_api }))
+    except Exception as e:
+            logging.exception(e)
+            return "Failed to access to databank: " + str(e) + "\n"
+ 
+@app.route('/api/daemon/hook_bank/remove/<bank>/<apikey>', methods=['GET', 'POST'])
+def remove_hook_bank(bank,apikey):
+    token = None
+
+    if apikey:
+        bearer = apikey.split()
+        if bearer[0] == 'APIKEY':
+            token = bearer[1]
+    log_file = None
+    try:
+        user = None
+        options_object = Options(OPTIONS_PARAMS)
+        if token:
+            r = requests.get(config['web']['local_endpoint'] + '/api/user/info/apikey/' + token)
+            if not r.status_code == 200:
+                abort(404, {'message': 'Invalid API Key or connection issue'})
+            user = r.json()['user']
+            options_object = Options({'user': user['id']})
+
+        bank_dir = Bank(bank, options=options_object, no_log=True)
+        if bank_dir.bank['properties']['visibility'] != 'public' and not bank_dir.is_owner():
+            abort(403, {'message': 'not authorized to access this bank'})
+
+        mongo = MongoClient(BiomajConfig.global_config.get('GENERAL', 'db.url'))
         logging.error("###DEBUG in hook_bank")
         if request.method == 'GET':
             if MongoConnector.db is None:
                 MongoConnector(BiomajConfig.global_config.get('GENERAL', 'db.url'),BiomajConfig.global_config.get('GENERAL', 'db.name'))
             remote_hooks = MongoConnector.remote_hooks
-            remote_hook = remote_hooks.find_one({'name_bank': bank})
-            if remote_hook is None:
-                remote_hook = {
-                    'name_bank': bank,
-                    'user': apikey,
-                }
-                remote_hook['_id'] = remote_hooks.insert(remote_hook)
-            return jsonify({'hook': str(remote_hooks.find_one({'name_bank': bank}))})
-        
+            remote_hook = remote_hooks.find_one({'user': apikey})
+            if remote_hook:
+                remote_hooks.remove({'user': apikey})
+        #return "Registration to the bank: " + str(bank) + " removed\n" 
+        return jsonify({'test': str(remote_hooks.find_one({'name_bank': bank }))})
+
     except Exception as e:
             logging.exception(e)
             return "Failed to access to databank: " + str(e) + "\n"
- 
 
 def get_bank_to_registered(url_bank):
     try:
