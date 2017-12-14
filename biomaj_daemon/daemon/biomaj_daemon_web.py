@@ -126,7 +126,8 @@ OPTIONS_PARAMS = {
     'trace': False,
     'whatsup': False,
     'lastlog': None,
-    'tail': 100
+    'tail': 100,
+    'stats': False
 }
 
 
@@ -196,7 +197,8 @@ def biomaj_status_info():
         })
 
     # Check internal proxy
-    r = requests.get(config['web']['local_endpoint'] + '/api/user')
+    proxy = Utils.get_service_endpoint(config, 'user')
+    r = requests.get(proxy + '/api/user')
     if not r.status_code == 200:
         status['status'].append({'service': 'biomaj-internal-proxy', 'status': -1, 'count': 0})
     else:
@@ -341,7 +343,8 @@ def biomaj_bank_log_tail(bank, tail=100):
         user = None
         options_object = Options(OPTIONS_PARAMS)
         if token:
-            r = requests.get(config['web']['local_endpoint'] + '/api/user/info/apikey/' + token)
+            proxy = Utils.get_service_endpoint(config, 'user')
+            r = requests.get(proxy + '/api/user/info/apikey/' + token)
             if not r.status_code == 200:
                 abort(404, {'message': 'Invalid API Key or connection issue'})
             user = r.json()['user']
@@ -400,7 +403,8 @@ def biomaj_daemon():
 
         user = None
         if token:
-            r = requests.get(config['web']['local_endpoint'] + '/api/user/info/apikey/' + token)
+            proxy = Utils.get_service_endpoint(config, 'user')
+            r = requests.get(proxy + '/api/user/info/apikey/' + token)
             if not r.status_code == 200:
                 abort(404, {'message': 'Invalid API Key or connection issue'})
             user = r.json()['user']

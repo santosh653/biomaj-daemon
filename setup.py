@@ -21,7 +21,7 @@ config = {
     'url': 'http://biomaj.genouest.org',
     'download_url': 'http://biomaj.genouest.org',
     'author_email': 'olivier.sallou@irisa.fr',
-    'version': '3.0.12',
+    'version': '3.0.13',
      'classifiers': [
         # How mature is this project? Common values are
         #   3 - Alpha
@@ -42,6 +42,7 @@ config = {
         'Programming Language :: Python :: 3.4'
     ],
     'install_requires': [
+                         'biomaj-core',
                          'biomaj',
                          'biomaj-user',
                          'biomaj-zipkin',

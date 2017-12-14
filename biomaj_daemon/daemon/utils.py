@@ -669,11 +669,29 @@ def biomaj_user_info(options, config):
     msg += 'Api key: ' + str(user['apikey']) + '\n'
     return (True, msg)
 
+def biomaj_stats(options, config):
+    disk_stats = Bank.get_banks_disk_usage()
+    results = [["Bank", "Release", "Size"]]
+    msg = 'BioMAJ statistics\n'
+    results = []
+    for disk_stat in disk_stats:
+        results.append([disk_stat['name'],
+                        'All',
+                        str(disk_stat['size'])])
+        for rel in disk_stat['releases']:
+            results.append(['',
+                            rel['name'],
+                            str(rel['size'])])
+    msg += tabulate(results, headers="firstrow", tablefmt="grid")
+    return (True, msg)
 
 def biomaj_client_action(options, config=None):
     check_options(options, config)
     if options.version:
         return biomaj_version(options, config)
+
+    if options.stats:
+        return biomaj_stats(options, config)
 
     if options.whatsup:
         return biomaj_whatsup(options, config)

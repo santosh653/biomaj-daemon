@@ -39,7 +39,8 @@ def on_executed(bank, procs):
                 metric['execution_time'] = proc['execution_time']
             metrics.append(metric)
         try:
-            requests.post(config['web']['local_endpoint'] + '/api/daemon/metrics', json=metrics)
+            proxy = Utils.get_service_endpoint(config, 'daemon')
+            requests.post(proxy + '/api/daemon/metrics', json=metrics)
         except Exception as e:
             logging.error('Failed to post metrics: ' + str(e))
 
