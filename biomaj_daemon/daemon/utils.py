@@ -14,6 +14,7 @@ from tabulate import tabulate
 
 from biomaj.bank import Bank
 from biomaj_core.config import BiomajConfig
+from biomaj_core.utils import Utils
 from biomaj.workflow import Workflow
 from biomaj.workflow import UpdateWorkflow
 from biomaj.workflow import RemoveWorkflow
@@ -30,7 +31,25 @@ def biomaj_version(options, config):
     Get biomaj version
     '''
     version = pkg_resources.require('biomaj')[0].version
-    return (True, 'Version: ' + str(version))
+    tools = []
+    biomaj_modules = [
+        'biomaj',
+        'biomaj-core',
+        'biomaj-daemon',
+        'biomaj-release',
+        'biomaj-download',
+        'biomaj-process',
+        'biomaj-cron',
+        'biomaj-ftp'
+        ]
+    results = [["Module", "Release", "Latest"]]
+    msg = 'BioMAJ modules version\n'
+    for module_name in biomaj_modules:
+        (version, latest) = Utils.get_module_version(module_name)
+        if version is not None:
+            results.append([module_name, version, latest])
+    msg += tabulate(results, headers="firstrow", tablefmt="grid")
+    return (True, 'Version: ' + str(msg))
 
 
 def check_options(options, config):
@@ -673,7 +692,6 @@ def biomaj_stats(options, config):
     disk_stats = Bank.get_banks_disk_usage()
     results = [["Bank", "Release", "Size"]]
     msg = 'BioMAJ statistics\n'
-    results = []
     for disk_stat in disk_stats:
         results.append([disk_stat['name'],
                         'All',
