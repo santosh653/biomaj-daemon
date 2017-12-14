@@ -40,7 +40,8 @@ def biomaj_version(options, config):
         'biomaj-download',
         'biomaj-process',
         'biomaj-cron',
-        'biomaj-ftp'
+        'biomaj-ftp',
+        'biomajwatcher'
         ]
     results = [["Module", "Release", "Latest"]]
     msg = 'BioMAJ modules version\n'
