@@ -333,9 +333,14 @@ def biomaj_status(options, config):
             return (False, 'Access forbidden')
         info = bank.get_bank_release_info(full=True)
         if options.json:
+            bank_info = []
+            headers = []
+            if info['info'] and len(info['info']) > 1:
+                headers = info['info'][0]
+                bank_info = info['info'][1:]
             msg = {
                 'bank': {
-                    'info': info['info'],
+                    'info': {'headers': headers, 'details': bank_info},
                     'production': info['prod'],
                     'pending': []
                     }
@@ -448,7 +453,7 @@ def biomaj_whatsup(options, config):
                     whatsup.append([daemon, ''] + proc)
     if whatsup:
         if options.json:
-            msg = {'services': whatsup}
+            msg = {'services': whatsup, 'headers': ['daemon', 'bank', 'action']}
         else:
             msg = tabulate(whatsup, ['daemon', 'bank', 'action'], tablefmt="simple")
     return (True, msg)

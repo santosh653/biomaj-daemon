@@ -3,6 +3,7 @@ import os
 import yaml
 import logging
 from collections import deque
+import copy
 
 from flask import Flask
 from flask import jsonify
@@ -90,8 +91,8 @@ def consul_declare(config):
 consul_declare(config)
 
 OPTIONS_PARAMS = {
-    'config': None,
     'check': False,
+    'config': None,
     'update': False,
     'fromscratch': False,
     'publish': False,
@@ -128,7 +129,14 @@ OPTIONS_PARAMS = {
     'lastlog': None,
     'tail': 100,
     'stats': False,
-    'json': False
+    'json': False,
+    'updatestatus': False,
+    'updatecancel': False,
+    'aboutme': False,
+    'userlogin': None,
+    'userpassword': None,
+    'proxy': None,
+    'schedule': False
 }
 
 
@@ -379,6 +387,531 @@ def biomaj_bank_log_tail(bank, tail=100):
 
 
 
+def daemon_api_auth(request):
+    apikey = request.headers.get('Authorization')
+    token = None
+    options_object = None
+    if apikey:
+        bearer = apikey.split()
+        if bearer[0] == 'APIKEY':
+            token = bearer[1]
+    if 'X-API-KEY' in request.headers:
+        token = request.headers['X-API-KEY']
+    try:
+        options = copy.deepcopy(OPTIONS_PARAMS)
+        options_object = Options(options)
+        options_object.json = True
+        options_object.token = token
+        options_object.user = None
+        options_object.redis_host = config['redis']['host']
+        options_object.redis_port = config['redis']['port']
+        options_object.redis_db = config['redis']['db']
+        options_object.redis_prefix = config['redis']['prefix']
+        user = None
+        if token:
+            proxy = Utils.get_service_endpoint(config, 'user')
+            r = requests.get(proxy + '/api/user/info/apikey/' + token)
+            if not r.status_code == 200:
+                return (404, options, {'message': 'Invalid API Key or connection issue'})
+            user = r.json()['user']
+            if user:
+                options_object.user = user['id']
+    except Exception as e:
+        logging.exception(e)
+        return (500, options_object, str(e))
+
+    return (200, options_object, None)
+
+@app.route('/api/daemon/aboutme', methods=['POST'])
+def biomaj_daemon_aboutme():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+
+    options.aboutme = True
+    params = request.get_json()
+    options.userlogin = params['login']
+    options.userpassword = params['password']
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/maintenance', methods=['POST'])
+def biomaj_daemon_maintenance_on():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user or 'admin' not in config['biomaj'] or options.user not in config['biomaj']['admin']:
+        abort(401, 'This action requires authentication with api key')
+    options.maintenance = 'on'
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/maintenance', methods=['DELETE'])
+def biomaj_daemon_maintenance_off():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user or 'admin' not in config['biomaj'] or options.user not in config['biomaj']['admin']:
+        abort(401, 'This action requires authentication with api key')
+    options.maintenance = 'off'
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/maintenance', methods=['GET'])
+def biomaj_daemon_maintenance_status():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.maintenance = 'status'
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/whatsup', methods=['GET'])
+def biomaj_daemon_maintenance_whatsup():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.whatsup = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/stats', methods=['GET'])
+def biomaj_daemon_stats():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.stats = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/version', methods=['GET'])
+def biomaj_daemon_version():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.version = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank', methods=['GET'])
+def biomaj_daemon_banks_status():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.status = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>', methods=['GET'])
+def biomaj_daemon_bank_status(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.status = True
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/check', methods=['GET'])
+def biomaj_daemon_bank_check(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.check = True
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/status', methods=['GET'])
+def biomaj_daemon_bank_update_status(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.updatestatus = True
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/status/ko', methods=['GET'])
+def biomaj_daemon_bank_status_ko(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.statusko = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/cancel', methods=['PUT'])
+def biomaj_daemon_bank_cancel(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.updatecancel = True
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/owner/<owner>', methods=['PUT'])
+def biomaj_daemon_bank_upate_owner(bank, owner):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.owner = owner
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/visibility/<visibility>', methods=['PUT'])
+def biomaj_daemon_bank_upate_visibility(bank, visibility):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.visibility = visibility
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/name/<name>', methods=['PUT'])
+def biomaj_daemon_bank_update_name(bank, name):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.newbank = name
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/move', methods=['PUT'])
+def biomaj_daemon_bank_update_directory(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    params = request.get_json()
+    options.newdir = params['path']
+    options.bank = bank
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>', methods=['POST'])
+def biomaj_daemon_bank_upate(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    params = request.get_json()
+    if 'publish' in params:
+        options.publish = params['publish']
+    if 'fromscratch' in params:
+        options.fromscratch = params['fromscratch']
+    if 'stop_before' in params:
+        options.stop_before = params['stop_before']
+    if 'stop_after' in params:
+        options.stop_after = params['stop_after']
+    if 'from_task' in params:
+        options.from_task = params['from_task']
+    if 'process' in params:
+        options.process = params['process']
+    if 'release' in params:
+        options.release = params['release']
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/publish', methods=['PUT'])
+def biomaj_daemon_bank_publish(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    options.publish = True
+    params = request.get_json()
+    if 'release' in params:
+        options.release = params['release']
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/publish', methods=['DELETE'])
+def biomaj_daemon_bank_unpublish(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    options.unpublish = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>', methods=['DELETE'])
+def biomaj_daemon_bank_remove(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    params = request.get_json()
+    if 'all' in params and params['all']:
+        options.removeall = True
+        if 'force' in params and params['force']:
+            options.force = params['force']
+    elif 'pending' in params and params['pending']:
+        options.removepending = True
+    else:
+        options.remove = True
+        if 'release' in params:
+            options.release = params['release']
+        else:
+            abort(400, 'missing release')
+
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/freeze/<release>', methods=['PUT'])
+def biomaj_daemon_bank_freeze(bank, release):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    options.release = release
+    options.freeze = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/freeze/<release>', methods=['DELETE'])
+def biomaj_daemon_bank_unfreeze(bank, release):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    options.release = release
+    options.unfreeze = True
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/search', methods=['GET'])
+def biomaj_daemon_bank_search(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    options.search = True
+    params = request.get_json()
+    if 'formats' in params and params['formats']:
+        options.formats = ','.join(params['formats'])
+    if 'types' in params and params['types']:
+        options.types = ','.join(params['types'])
+    if 'query' in params and params['query']:
+        options.query = ','.join(params['query'])
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+@app.route('/api/daemon/bank/<bank>/show', methods=['GET'])
+def biomaj_daemon_bank_show(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.bank = bank
+    options.show = True
+    params = request.get_json()
+    if 'release' in params:
+        options.release = params['release']
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
 @app.route('/api/daemon', methods=['POST'])
 def biomaj_daemon():
     '''
@@ -412,13 +945,18 @@ def biomaj_daemon():
             if user:
                 options_object.user = user['id']
 
+
+        if options.maintenance in ['on', 'off']:
+            if not options_object.user or 'admin' not in config['biomaj'] or options_object.user not in config['biomaj']['admin']:
+                abort(401, {'message': 'This action requires authentication with api key'})
+
         if options_object.bank:
             bmaj_options = BmajOptions(options_object)
             BiomajConfig(options_object.bank, bmaj_options)
 
             if not options_object.search and not options_object.show and not options_object.check and not options_object.status:
                 if not user:
-                    abort(403, {'message': 'This action requires authentication with api key'})
+                    abort(401, {'message': 'This action requires authentication with api key'})
 
         (res, msg) = biomaj_client_action(options_object, config)
     except Exception as e:

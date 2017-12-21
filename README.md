@@ -35,3 +35,17 @@ If you cloned the repository and installed it via python setup.py install, just 
     gunicorn -c ../path_to/gunicorn_conf.py biomaj_daemon.daemon.biomaj_daemon_web:app
 
 Web processes should be behind a proxy/load balancer, API base url /api/daemon
+
+## API
+
+For authentication, add api key to HTTP header X-API-KEY
+
+For admin only, operations, add to config.yml
+
+    general:
+      admin:
+        - admin_user_id
+
+
+
+TO use API, some operations are limited to 
