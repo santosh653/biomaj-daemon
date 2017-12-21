@@ -127,7 +127,8 @@ OPTIONS_PARAMS = {
     'whatsup': False,
     'lastlog': None,
     'tail': 100,
-    'stats': False
+    'stats': False,
+    'json': False
 }
 
 

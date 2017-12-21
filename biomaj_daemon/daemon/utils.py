@@ -43,12 +43,20 @@ def biomaj_version(options, config):
         'biomaj-ftp',
         'biomajwatcher'
         ]
-    results = [["Module", "Release", "Latest"]]
+
+    results = []
+    if not options.json:
+        results = [["Module", "Release", "Latest"]]
+
     msg = 'BioMAJ modules version\n'
     for module_name in biomaj_modules:
         (version, latest) = Utils.get_module_version(module_name)
         if version is not None:
             results.append([module_name, version, latest])
+
+    if options.json:
+        return (True, {'version': results})
+
     msg += tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, 'Version: ' + str(msg))
 
@@ -77,7 +85,7 @@ def biomaj_maintenance(options, config):
     Maintenance management
     '''
     if options.maintenance not in ['on', 'off', 'status']:
-        print("Wrong maintenance value [on,off,status]")
+        # print("Wrong maintenance value [on,off,status]")
         return (False, "Wrong maintenance value [on,off,status]")
 
     data_dir = BiomajConfig.global_config.get('GENERAL', 'data.dir')
@@ -191,13 +199,20 @@ def biomaj_search(options, config):
     if options.query:
         res = Bank.searchindex(options.query)
         msg += 'Query matches for :' + options.query + '\n'
-        results = [["Release", "Format(s)", "Type(s)", "Files"]]
+        results = []
+        headers = ["Release", "Format(s)", "Type(s)", "Files"]
+        if not options.json:
+            results.append(headers)
         for match in res:
             results.append([match['_source']['release'],
                             str(match['_source']['format']),
                             str(match['_source']['types']),
                             ','.join(match['_source']['files'])])
+        if options.json:
+            return (True, {'matches': results, 'headers': headers})
+
         msg += tabulate(results, headers="firstrow", tablefmt="grid")
+        return (True, msg)
     else:
         formats = []
         if options.formats:
@@ -207,7 +222,10 @@ def biomaj_search(options, config):
             types = options.types.split(',')
         msg += "Search by formats=" + str(formats) + ", types=" + str(types) + '\n'
         res = Bank.search(formats, types, False)
-        results = [["Name", "Release", "Format(s)", "Type(s)", 'Published']]
+        results = []
+        headers = ["Name", "Release", "Format(s)", "Type(s)", 'Published']
+        if not options.json:
+            results.append(headers)
         for bank in sorted(res, key=lambda bank: (bank['name'])):
             b = bank['name']
             bank['production'].sort(key=lambda n: n['release'], reverse=True)
@@ -215,10 +233,21 @@ def biomaj_search(options, config):
                 iscurrent = ""
                 if prod['session'] == bank['current']:
                     iscurrent = "yes"
-                results.append([b if b else '', prod['release'], ','.join(prod['formats']),
-                                ','.join(prod['types']), iscurrent])
+                if options.json:
+                    results.append([b if b else '',
+                        prod['release'],
+                        prod['formats'],
+                        prod['types'], iscurrent])
+                else:
+                    results.append([b if b else '',
+                        prod['release'],
+                        ','.join(prod['formats']),
+                        ','.join(prod['types']), iscurrent])
+        if options.json:
+            return (True, {'matches': results, 'headers': headers})
+
         msg += tabulate(results, headers="firstrow", tablefmt="grid")
-    return (True, msg)
+        return (True, msg)
 
 
 def biomaj_show(options, config):
@@ -229,7 +258,10 @@ def biomaj_show(options, config):
         return (False, "Bank option is required")
 
     bank = Bank(options.bank, options=options, no_log=True)
-    results = [["Name", "Release", "Format(s)", "Type(s)", "Tag(s)", "File(s)"]]
+    results = []
+    headers = ["Name", "Release", "Format(s)", "Type(s)", "Tag(s)", "File(s)"]
+    if not options.json:
+        results.append(headers)
     current = None
     fformat = None
     if 'current' in bank.bank and bank.bank['current']:
@@ -249,19 +281,32 @@ def biomaj_show(options, config):
             atypes = []
             for fformat in list(formats.keys()):
                 for elt in formats[fformat]:
-                    atypes.append(','.join(elt['types']))
+                    if options.json:
+                        atypes.append(elt['types'])
+                    else:
+                        atypes.append(','.join(elt['types']))
                     for tag in list(elt['tags'].keys()):
                         atags.append(elt['tags'][tag])
                     for eltfile in elt['files']:
                         afiles.append(eltfile)
-            results.append([
-                bank.bank['name'],
-                release,
-                fformat,
-                ','.join(atypes),
-                ','.join(atags),
-                ','.join(afiles)])
-    msg = tabulate(results, headers="firstrow", tablefmt="grid")
+            if options.json:
+                results.append([
+                    bank.bank['name'],
+                    release,
+                    fformat,
+                    atypes,
+                    atags,
+                    afiles])
+                msg = {'bank': results}
+            else:
+                results.append([
+                    bank.bank['name'],
+                    release,
+                    fformat,
+                    ','.join(atypes),
+                    ','.join(atags),
+                    ','.join(afiles)])
+                msg = tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, msg)
 
 
@@ -287,15 +332,30 @@ def biomaj_status(options, config):
         if bank.bank['properties']['visibility'] != 'public' and not bank.is_owner():
             return (False, 'Access forbidden')
         info = bank.get_bank_release_info(full=True)
-        msg += tabulate(info['info'], headers='firstrow', tablefmt='psql') + '\n'
-        msg += tabulate(info['prod'], headers='firstrow', tablefmt='psql') + '\n'
+        if options.json:
+            msg = {
+                'bank': {
+                    'info': info['info'],
+                    'production': info['prod'],
+                    'pending': []
+                    }
+                }
+        else:
+            msg += tabulate(info['info'], headers='firstrow', tablefmt='psql') + '\n'
+            msg += tabulate(info['prod'], headers='firstrow', tablefmt='psql') + '\n'
         # do we have some pending release(s)
         if 'pend' in info and len(info['pend']) > 1:
-            msg += tabulate(info['pend'], headers='firstrow', tablefmt='psql') + '\n'
+            if options.json:
+                msg['bank']['pending'] = info['pend']
+            else:
+                msg += tabulate(info['pend'], headers='firstrow', tablefmt='psql') + '\n'
     else:
         banks = Bank.list()
         # Headers of output table
-        banks_list = [["Name", "Type(s)", "Release", "Visibility", "Last update"]]
+        banks_list = []
+        headers = ["Name", "Type(s)", "Release", "Visibility", "Last update"]
+        if not options.json:
+            banks_list.append(headers)
         for bank in sorted(banks, key=lambda k: k['name']):
             try:
                 bank = Bank(bank['name'], options=options, no_log=True)
@@ -303,7 +363,10 @@ def biomaj_status(options, config):
                     banks_list.append(bank.get_bank_release_info()['info'])
             except Exception as e:
                 logging.error('Failed to load bank %s: %s' % (bank['name'], str(e)))
-        msg += tabulate(banks_list, headers="firstrow", tablefmt="psql") + '\n'
+        if options.json:
+            msg = {'headers': headers, 'banks': banks_list}
+        else:
+            msg += tabulate(banks_list, headers="firstrow", tablefmt="psql") + '\n'
     return (True, msg)
 
 
@@ -312,7 +375,11 @@ def biomaj_status_ko(options, config):
     Get failed banks
     '''
     banks = Bank.list()
-    banks_list = [["Name", "Type(s)", "Release", "Visibility", "Last run"]]
+    banks_list = []
+    headers = ["Name", "Type(s)", "Release", "Visibility", "Last run"]
+    if not options.json:
+        banks_list.append(headers)
+
     for bank in sorted(banks, key=lambda k: k['name']):
         try:
             bank = Bank(bank['name'], options=options, no_log=True)
@@ -324,6 +391,9 @@ def biomaj_status_ko(options, config):
                         banks_list.append(bank.get_bank_release_info()['info'])
         except Exception as e:
             return (False, str(e))
+    if options.json:
+        msg = {'headers': headers, 'banks': banks_list}
+        return (True, msg)
     return (True, tabulate(banks_list, headers="firstrow", tablefmt="psql"))
 
 
@@ -377,7 +447,10 @@ def biomaj_whatsup(options, config):
                 else:
                     whatsup.append([daemon, ''] + proc)
     if whatsup:
-        msg = tabulate(whatsup, ['daemon', 'bank', 'action'], tablefmt="simple")
+        if options.json:
+            msg = {'services': whatsup}
+        else:
+            msg = tabulate(whatsup, ['daemon', 'bank', 'action'], tablefmt="simple")
     return (True, msg)
 
 
@@ -665,7 +738,10 @@ def biomaj_update_status(options, config):
             progress = status_info[step]['progress']
             for proc in list(progress.keys()):
                 msg.append([proc, str(progress[proc])])
-    return (True, tabulate(pending_actions, headers="firstrow", tablefmt="grid") + tabulate(msg, headers="firstrow", tablefmt="grid"))
+    if options.json:
+        return (True, {'pending': pending_actions})
+    else:
+        return (True, tabulate(pending_actions, headers="firstrow", tablefmt="grid") + tabulate(msg, headers="firstrow", tablefmt="grid"))
 
 
 def biomaj_user_info(options, config):
@@ -684,14 +760,25 @@ def biomaj_user_info(options, config):
         user = r.json()['user']
     except Exception as e:
         return (False, 'Connection error to proxy: ' + str(e))
-    msg = 'User: ' + str(user['id']) + '\n'
-    msg += 'Email: ' + str(user['email']) + '\n'
-    msg += 'Api key: ' + str(user['apikey']) + '\n'
+    msg = None
+    if options.json:
+        msg = {
+            'user': str(user['id']),
+            'email': str(user['email']),
+            'apikey': str(user['apikey'])
+        }
+    else:
+        msg = 'User: ' + str(user['id']) + '\n'
+        msg += 'Email: ' + str(user['email']) + '\n'
+        msg += 'Api key: ' + str(user['apikey']) + '\n'
     return (True, msg)
 
 def biomaj_stats(options, config):
     disk_stats = Bank.get_banks_disk_usage()
-    results = [["Bank", "Release", "Size"]]
+    results = []
+    headers = ["Bank", "Release", "Size"]
+    if not options.json:
+        results.append(headers)
     msg = 'BioMAJ statistics\n'
     for disk_stat in disk_stats:
         results.append([disk_stat['name'],
@@ -701,7 +788,10 @@ def biomaj_stats(options, config):
             results.append(['',
                             rel['name'],
                             str(rel['size'])])
-    msg += tabulate(results, headers="firstrow", tablefmt="grid")
+    if options.json:
+        msg = {'headers': headers, 'stats': results}
+    else:
+        msg += tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, msg)
 
 def biomaj_client_action(options, config=None):
