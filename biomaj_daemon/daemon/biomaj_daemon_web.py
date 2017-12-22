@@ -407,6 +407,7 @@ def daemon_api_auth(request):
         options_object.redis_port = config['redis']['port']
         options_object.redis_db = config['redis']['db']
         options_object.redis_prefix = config['redis']['prefix']
+        options_object.proxy = True
         user = None
         if token:
             proxy = Utils.get_service_endpoint(config, 'user')
@@ -430,9 +431,9 @@ def biomaj_daemon_aboutme():
 
     options.aboutme = True
     params = request.get_json()
-    options.userlogin = params['login']
-    options.userpassword = params['password']
     try:
+        options.userlogin = params['login']
+        options.userpassword = params['password']
         (res, msg) = biomaj_client_action(options, config)
         if res:
             if isinstance(msg, dict):
@@ -709,9 +710,9 @@ def biomaj_daemon_bank_update_directory(bank):
     if not options.user:
         abort(401, 'This action requires authentication with api key')
     params = request.get_json()
-    options.newdir = params['path']
     options.bank = bank
     try:
+        options.newdir = params['path']
         (res, msg) = biomaj_client_action(options, config)
         if res:
             if isinstance(msg, dict):
@@ -722,7 +723,7 @@ def biomaj_daemon_bank_update_directory(bank):
         abort(500, str(e))
 
 @app.route('/api/daemon/bank/<bank>', methods=['POST'])
-def biomaj_daemon_bank_upate(bank):
+def biomaj_daemon_bank_update(bank):
     (http_code, options, error) = daemon_api_auth(request)
     if error:
         abort(http_code, error)
@@ -730,6 +731,8 @@ def biomaj_daemon_bank_upate(bank):
         abort(401, 'This action requires authentication with api key')
     options.bank = bank
     params = request.get_json()
+    if params is None:
+        params = {}
     if 'publish' in params:
         options.publish = params['publish']
     if 'fromscratch' in params:
@@ -764,6 +767,8 @@ def biomaj_daemon_bank_publish(bank):
     options.bank = bank
     options.publish = True
     params = request.get_json()
+    if params is None:
+        params = {}
     if 'release' in params:
         options.release = params['release']
     try:
@@ -804,6 +809,8 @@ def biomaj_daemon_bank_remove(bank):
         abort(401, 'This action requires authentication with api key')
     options.bank = bank
     params = request.get_json()
+    if params is None:
+        params = {}
     if 'all' in params and params['all']:
         options.removeall = True
         if 'force' in params and params['force']:
@@ -874,6 +881,8 @@ def biomaj_daemon_bank_search(bank):
         abort(http_code, error)
     options.search = True
     params = request.get_json()
+    if params is None:
+        params = {}
     if 'formats' in params and params['formats']:
         options.formats = ','.join(params['formats'])
     if 'types' in params and params['types']:
@@ -900,6 +909,8 @@ def biomaj_daemon_bank_show(bank):
     options.bank = bank
     options.show = True
     params = request.get_json()
+    if params is None:
+        params = {}
     if 'release' in params:
         options.release = params['release']
     try:
