@@ -1,5 +1,7 @@
 biomaj:
     config: '/home/osallou/Development/NOSAVE/genouest/global.properties'
+    admin:
+      - 'biomaj'
 
 redis:
     host: '127.0.0.1'
