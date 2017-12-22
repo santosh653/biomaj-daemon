@@ -946,7 +946,7 @@ def biomaj_daemon():
                 options_object.user = user['id']
 
 
-        if options.maintenance in ['on', 'off']:
+        if options_object.maintenance in ['on', 'off']:
             if not options_object.user or 'admin' not in config['biomaj'] or options_object.user not in config['biomaj']['admin']:
                 abort(401, {'message': 'This action requires authentication with api key'})
 
