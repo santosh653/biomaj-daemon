@@ -755,7 +755,7 @@ def biomaj_update_status(options, config):
             for proc in list(progress.keys()):
                 msg.append([proc, str(progress[proc])])
     if options.json:
-        return (True, {'pending': {'headers': pending_headers, 'actions': pending_actions}, 'status': {'headers': headers, 'process': msg})
+        return (True, {'pending': {'headers': pending_headers, 'actions': pending_actions}, 'status': {'headers': headers, 'process': msg}})
     else:
         return (True, tabulate(pending_actions, headers="firstrow", tablefmt="grid") + tabulate(msg, headers="firstrow", tablefmt="grid"))
 
