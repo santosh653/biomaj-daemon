@@ -297,7 +297,7 @@ def biomaj_show(options, config):
                     atypes,
                     atags,
                     afiles])
-                msg = {'bank': results}
+                msg = {'details': results, 'headers': headers}
             else:
                 results.append([
                     bank.bank['name'],
@@ -338,10 +338,15 @@ def biomaj_status(options, config):
             if info['info'] and len(info['info']) > 1:
                 headers = info['info'][0]
                 bank_info = info['info'][1:]
+            prod_info = []
+            prod_headers = []
+            if info['prod'] and len(info['prod']) > 1:
+                prod_headers = info['prod'][0]
+                prod_info = info['prod'][1:]
             msg = {
                 'bank': {
                     'info': {'headers': headers, 'details': bank_info},
-                    'production': info['prod'],
+                    'production': {'headers': prod_headers, 'details': prod_info},
                     'pending': []
                     }
                 }
@@ -704,7 +709,10 @@ def biomaj_update_status(options, config):
     if not redis_client:
         return (False, 'Redis not configured')
     pending = redis_client.llen(config['redis']['prefix'] + ':queue')
-    pending_actions = [['Pending actions', 'Date']]
+    pending_actions = []
+    pending_headers = ['Pending actions', 'Date']
+    if not options.json:
+        pending_actions.append(pending_headers)
     for index in range(pending):
         pending_action = redis_client.lindex(config['redis']['prefix'] + ':queue', index)
         if pending_action:
@@ -721,7 +729,10 @@ def biomaj_update_status(options, config):
         return (True, 'No update information available')
     status_info = bmaj.bank['status']
 
-    msg = [["Workflow step", "Status"]]
+    msg = []
+    headers = ["Workflow step", "Status"]
+    if not options.json:
+        msg.append(headers)
 
     if 'log_file' in status_info:
         msg.append(['log_file', str(status_info['log_file']['status'])])
@@ -744,7 +755,7 @@ def biomaj_update_status(options, config):
             for proc in list(progress.keys()):
                 msg.append([proc, str(progress[proc])])
     if options.json:
-        return (True, {'pending': pending_actions})
+        return (True, {'pending': {'headers': pending_headers, 'actions': pending_actions}, 'status': {'headers': headers, 'process': msg})
     else:
         return (True, tabulate(pending_actions, headers="firstrow", tablefmt="grid") + tabulate(msg, headers="firstrow", tablefmt="grid"))
 
