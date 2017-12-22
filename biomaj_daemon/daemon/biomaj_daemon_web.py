@@ -729,6 +729,7 @@ def biomaj_daemon_bank_update(bank):
         abort(http_code, error)
     if not options.user:
         abort(401, 'This action requires authentication with api key')
+    options.update = True
     options.bank = bank
     params = request.get_json()
     if params is None:

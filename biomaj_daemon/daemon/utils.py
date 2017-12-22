@@ -880,3 +880,5 @@ def biomaj_client_action(options, config=None):
 
     if options.aboutme:
         return biomaj_user_info(options, config)
+
+    return (False, "no option match")
