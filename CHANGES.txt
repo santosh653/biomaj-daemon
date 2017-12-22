@@ -2,6 +2,7 @@
   Allow per service local_endpoint definition
   Add --stats option
   Modify --version option to get all module details
+  Add REST API to daemon (/api/daemon/...)
 
 3.0.12:
   Add biomaj_daemon_consumer.py to python scripts for install with package
