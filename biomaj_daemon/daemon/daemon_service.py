@@ -6,6 +6,8 @@ import datetime
 import time
 import json
 import threading
+import signal
+import sys
 
 import redis
 import consul
@@ -82,6 +84,7 @@ class DaemonService(object):
 
     def __init__(self, config_file):
         self.logger = logging
+        self.curBank = None
         self.session = None
         self.executed_callback = None
         with open(config_file, 'r') as ymlfile:
@@ -106,6 +109,16 @@ class DaemonService(object):
         )
 
         self.logger.info('Daemon service started')
+        signal.signal(signal.SIGTERM, self.catch)
+        signal.siginterrupt(signal.SIGTERM, False)
+
+    def catch(self, signum, frame):
+        self.logger.warn('SIGTERM signal received')
+        if self.curBank:
+            self.redis_client.set(self.config['redis']['prefix'] + ':' + self.curBank + ':action:cancel', 1)
+            self.logger.warn('SIGTERM signal received, cancelling update for ' + self.curBank)
+        else:
+            sys.exit(1)
 
     def close(self):
         if self.channel:
@@ -115,6 +128,7 @@ class DaemonService(object):
         self.executed_callback = func
 
     def __start_action(self, bank, action):
+        self.curBank = bank
         whatsup = bank + ':' + str(action)
         self.redis_client.hset(
             self.config['redis']['prefix'] + ':daemons:status',
@@ -133,6 +147,7 @@ class DaemonService(object):
             self.config['consul']['id'],
             'pending'
         )
+        self.curBank = None
 
     def execute(self, options):
         '''

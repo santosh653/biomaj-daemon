@@ -1,5 +1,6 @@
 3.0.15:
   Add --history option
+  Catch SIGTERM to cancel bank update for SIGKILL
 3.0.14:
   Fake version for Pypi re-upload
 3.0.13:
