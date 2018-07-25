@@ -543,6 +543,26 @@ def biomaj_daemon_version():
     except Exception as e:
         abort(500, str(e))
 
+
+@app.route('/api/daemon/history', methods=['GET'])
+def biomaj_daemon_history():
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+
+    options.history = True
+    options.historyLimit = request.args.get('limit', 100)
+    try:
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+
 @app.route('/api/daemon/bank', methods=['GET'])
 def biomaj_daemon_banks_status():
     (http_code, options, error) = daemon_api_auth(request)

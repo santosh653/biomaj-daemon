@@ -8,3 +8,4 @@ python-consul
 prometheus_client>=0.0.18
 requests
 biomaj-core>=3.0.10
+biomaj>=3.1.6

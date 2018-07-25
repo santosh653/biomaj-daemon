@@ -810,10 +810,35 @@ def biomaj_stats(options, config):
         msg += tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, msg)
 
+def biomaj_history(options, config):
+    history = Bank.get_history(options.historyLimit)
+    results = []
+    headers = ["Bank", "Action", "Start", "End", "Updated", "Error"]
+    if not options.json:
+        results.append(headers)
+    msg = 'BioMAJ history\n'
+    for h in history:
+        results.append([h['bank'],
+                        h['action'],
+                        datetime.datetime.utcfromtimestamp(h['start']),
+                        datetime.datetime.utcfromtimestamp(h['end']),
+                        str(h['updated']),
+                        str(h['error'])
+        ])
+    if options.json:
+        msg = {'headers': headers, 'history': results}
+    else:
+        msg += tabulate(results, headers="firstrow", tablefmt="grid")
+    return (True, msg)
+
+
 def biomaj_client_action(options, config=None):
     check_options(options, config)
     if options.version:
         return biomaj_version(options, config)
+
+    if options.history:
+        return biomaj_history(options, config)
 
     if options.stats:
         return biomaj_stats(options, config)
