@@ -136,7 +136,9 @@ OPTIONS_PARAMS = {
     'userlogin': None,
     'userpassword': None,
     'proxy': None,
-    'schedule': False
+    'schedule': False,
+    'history': False,
+    'historyLimit': 20
 }
 
 
