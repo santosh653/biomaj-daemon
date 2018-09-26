@@ -72,6 +72,7 @@ redis_client = redis.StrictRedis(
 
 logging.info("Check database schema and upgrade if necessary")
 SchemaVersion.migrate_pendings()
+SchemaVersion.set_version()
 
 app = Flask(__name__)
 
