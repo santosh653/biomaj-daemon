@@ -1,3 +1,9 @@
+3.0.17:
+  Allow use of env variables to override micro.x and rabbitmq variables in global.properties
+    like for config.yml.
+    Ex: WEB_LOCAL_ENDPOINT_DOWNLOAD defines proxy address for download web service,
+        WEB_LOCAL_ENDPOINT defines global proxy address for all web services, etc.
+    If not defined, will use values from global.properties
 3.0.16:
   After migration checks, update db_schema to current version
 3.0.15:
