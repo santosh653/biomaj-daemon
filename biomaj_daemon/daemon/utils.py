@@ -433,6 +433,12 @@ def biomaj_whatsup(options, config):
             pending_len = 0
 
         whatsup.append(['queue', str(pending_len), 'waiting'])
+        for index in range(pending_len):
+            pending_action = redis_client.lindex(config['redis']['prefix'] + ':queue', index)
+            if pending_action:
+                pending_bank = json.loads(pending_action)
+                if pending_bank.get('bank', None):
+                    whatsup.append(['queued', pending_bank['bank'], 'waiting'])
 
     if not options.proxy:
         data_dir = BiomajConfig.global_config.get('GENERAL', 'data.dir')
@@ -466,7 +472,7 @@ def biomaj_whatsup(options, config):
 
 def biomaj_send_message(options, config):
     '''
-    Send message to rabbitmq listener
+    Send message to listener
     '''
     if not options.proxy:
         return (False, 'option not allowed without --proxy option')
@@ -751,9 +757,10 @@ def biomaj_update_status(options, config):
                 else:
                     msg.append([step, 'waiting'])
         if step in ['postprocess', 'preprocess', 'removeprocess']:
-            progress = status_info[step]['progress']
-            for proc in list(progress.keys()):
-                msg.append([proc, str(progress[proc])])
+            if status_info.get(step, None) and status_info[step].get('progress', None):
+                progress = status_info[step]['progress']
+                for proc in list(progress.keys()):
+                    msg.append([proc, str(progress[proc])])
     if options.json:
         return (True, {'pending': {'headers': pending_headers, 'actions': pending_actions}, 'status': {'headers': headers, 'process': msg}})
     else:

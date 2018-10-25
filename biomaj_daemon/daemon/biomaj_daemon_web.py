@@ -599,6 +599,21 @@ def biomaj_daemon_bank_status(bank):
     except Exception as e:
         abort(500, str(e))
 
+@app.route('/api/daemon/bank/<bank>/owns', methods=['GET'])
+def biomaj_daemon_bank_isowner(bank):
+    '''
+    Checks that logged user is admin or owner of the bank
+    '''
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    bank_log = Bank(bank, options=options, no_log=True)
+    if bank_log.is_owner():
+        return jsonify({'is_admin_or_owner': True})
+    else:
+        return jsonify({'is_admin_or_owner': False})
+
+
 @app.route('/api/daemon/bank/<bank>/check', methods=['GET'])
 def biomaj_daemon_bank_check(bank):
     (http_code, options, error) = daemon_api_auth(request)
