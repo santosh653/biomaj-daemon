@@ -35,7 +35,7 @@ from biomaj_daemon.daemon.utils import biomaj_client_action
 
 config_file = 'config.yml'
 if 'BIOMAJ_CONFIG' in os.environ:
-        config_file = os.environ['BIOMAJ_CONFIG']
+    config_file = os.environ['BIOMAJ_CONFIG']
 
 config = None
 with open(config_file, 'r') as ymlfile:
@@ -242,7 +242,7 @@ def biomaj_status_info():
             biomaj_mongo.server_info()
             mongo_ok = True
         except Exception as e:
-            logging.error('Failed to connect to mongo')
+            logging.exception('Failed to connect to mongo:' + str(e))
         if not mongo_ok:
             status['status'].append({'service': 'biomaj-mongo', 'status': -1, 'count': 0})
         else:
@@ -290,7 +290,7 @@ def biomaj_status_info():
     r = requests.get('http://' + config['consul']['host'] + ':8500/v1/agent/services')
     if not r.status_code == 200:
         status['status'].append({'service': 'biomaj-consul', 'status': -1, 'count': 0})
-        last_status = status
+        # last_status = status
         return status
 
     status['status'].append({'service': 'biomaj-consul', 'status': 1, 'count': 1})
@@ -311,7 +311,7 @@ def biomaj_status_info():
         check_r = requests.get('http://' + config['consul']['host'] + ':8500/v1/health/service/' + consul_services[consul_service]['Service'])
         if not check_r.status_code == 200:
             status['status'].append({'service': 'biomaj-consul', 'status': -1, 'count': 0})
-            last_status = status
+            # last_status = status
             return status
         checks = check_r.json()
         nb_service = 0
@@ -345,13 +345,15 @@ def biomaj_status_info():
         if biomaj_service not in services:
             status['status'].append({'service': biomaj_service, 'count': 0, 'status': -1})
 
-    last_status = status
+    # last_status = status
 
     return jsonify(status)
+
 
 @app.route('/api/daemon/bank/<bank>/log', methods=['GET'])
 def biomaj_bank_log(bank):
     return biomaj_bank_log_tail(bank, 0)
+
 
 @app.route('/api/daemon/bank/<bank>/log/<tail>', methods=['GET'])
 def biomaj_bank_log_tail(bank, tail=100):
@@ -401,7 +403,6 @@ def biomaj_bank_log_tail(bank, tail=100):
     return Response(generate(), mimetype='text/plain')
 
 
-
 def daemon_api_auth(request):
     apikey = request.headers.get('Authorization')
     token = None
@@ -438,6 +439,7 @@ def daemon_api_auth(request):
 
     return (200, options_object, None)
 
+
 @app.route('/api/daemon/aboutme', methods=['POST'])
 def biomaj_daemon_aboutme():
     (http_code, options, error) = daemon_api_auth(request)
@@ -458,6 +460,7 @@ def biomaj_daemon_aboutme():
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/maintenance', methods=['POST'])
 def biomaj_daemon_maintenance_on():
     (http_code, options, error) = daemon_api_auth(request)
@@ -475,6 +478,7 @@ def biomaj_daemon_maintenance_on():
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/maintenance', methods=['DELETE'])
 def biomaj_daemon_maintenance_off():
@@ -494,6 +498,7 @@ def biomaj_daemon_maintenance_off():
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/maintenance', methods=['GET'])
 def biomaj_daemon_maintenance_status():
     (http_code, options, error) = daemon_api_auth(request)
@@ -509,6 +514,7 @@ def biomaj_daemon_maintenance_status():
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/whatsup', methods=['GET'])
 def biomaj_daemon_maintenance_whatsup():
@@ -526,6 +532,7 @@ def biomaj_daemon_maintenance_whatsup():
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/stats', methods=['GET'])
 def biomaj_daemon_stats():
     (http_code, options, error) = daemon_api_auth(request)
@@ -541,6 +548,7 @@ def biomaj_daemon_stats():
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/version', methods=['GET'])
 def biomaj_daemon_version():
@@ -594,6 +602,7 @@ def biomaj_daemon_banks_status():
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>', methods=['GET'])
 def biomaj_daemon_bank_status(bank):
     (http_code, options, error) = daemon_api_auth(request)
@@ -610,6 +619,7 @@ def biomaj_daemon_bank_status(bank):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/bank/<bank>/owns', methods=['GET'])
 def biomaj_daemon_bank_isowner(bank):
@@ -643,6 +653,7 @@ def biomaj_daemon_bank_check(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/status', methods=['GET'])
 def biomaj_daemon_bank_update_status(bank):
     (http_code, options, error) = daemon_api_auth(request)
@@ -660,6 +671,7 @@ def biomaj_daemon_bank_update_status(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/status/ko', methods=['GET'])
 def biomaj_daemon_bank_status_ko(bank):
     (http_code, options, error) = daemon_api_auth(request)
@@ -675,6 +687,7 @@ def biomaj_daemon_bank_status_ko(bank):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/bank/<bank>/cancel', methods=['PUT'])
 def biomaj_daemon_bank_cancel(bank):
@@ -695,6 +708,7 @@ def biomaj_daemon_bank_cancel(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/owner/<owner>', methods=['PUT'])
 def biomaj_daemon_bank_upate_owner(bank, owner):
     (http_code, options, error) = daemon_api_auth(request)
@@ -713,6 +727,7 @@ def biomaj_daemon_bank_upate_owner(bank, owner):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/bank/<bank>/visibility/<visibility>', methods=['PUT'])
 def biomaj_daemon_bank_upate_visibility(bank, visibility):
@@ -733,6 +748,7 @@ def biomaj_daemon_bank_upate_visibility(bank, visibility):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/name/<name>', methods=['PUT'])
 def biomaj_daemon_bank_update_name(bank, name):
     (http_code, options, error) = daemon_api_auth(request)
@@ -751,6 +767,7 @@ def biomaj_daemon_bank_update_name(bank, name):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/bank/<bank>/move', methods=['PUT'])
 def biomaj_daemon_bank_update_directory(bank):
@@ -771,6 +788,7 @@ def biomaj_daemon_bank_update_directory(bank):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/bank/<bank>', methods=['POST'])
 def biomaj_daemon_bank_update(bank):
@@ -808,6 +826,7 @@ def biomaj_daemon_bank_update(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/publish', methods=['PUT'])
 def biomaj_daemon_bank_publish(bank):
     (http_code, options, error) = daemon_api_auth(request)
@@ -832,6 +851,7 @@ def biomaj_daemon_bank_publish(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/publish', methods=['DELETE'])
 def biomaj_daemon_bank_unpublish(bank):
     (http_code, options, error) = daemon_api_auth(request)
@@ -850,6 +870,7 @@ def biomaj_daemon_bank_unpublish(bank):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/bank/<bank>', methods=['DELETE'])
 def biomaj_daemon_bank_remove(bank):
@@ -885,6 +906,7 @@ def biomaj_daemon_bank_remove(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/freeze/<release>', methods=['PUT'])
 def biomaj_daemon_bank_freeze(bank, release):
     (http_code, options, error) = daemon_api_auth(request)
@@ -905,6 +927,7 @@ def biomaj_daemon_bank_freeze(bank, release):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/freeze/<release>', methods=['DELETE'])
 def biomaj_daemon_bank_unfreeze(bank, release):
     (http_code, options, error) = daemon_api_auth(request)
@@ -924,6 +947,7 @@ def biomaj_daemon_bank_unfreeze(bank, release):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon/search', methods=['GET'])
 def biomaj_daemon_bank_search(bank):
@@ -950,6 +974,7 @@ def biomaj_daemon_bank_search(bank):
     except Exception as e:
         abort(500, str(e))
 
+
 @app.route('/api/daemon/bank/<bank>/show', methods=['GET'])
 def biomaj_daemon_bank_show(bank):
     (http_code, options, error) = daemon_api_auth(request)
@@ -973,6 +998,7 @@ def biomaj_daemon_bank_show(bank):
                 return jsonify({'msg': msg})
     except Exception as e:
         abort(500, str(e))
+
 
 @app.route('/api/daemon', methods=['POST'])
 def biomaj_daemon():
@@ -1006,7 +1032,6 @@ def biomaj_daemon():
             user = r.json()['user']
             if user:
                 options_object.user = user['id']
-
 
         if options_object.maintenance in ['on', 'off']:
             if not options_object.user or 'admin' not in config['biomaj'] or options_object.user not in config['biomaj']['admin']:

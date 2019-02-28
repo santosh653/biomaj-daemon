@@ -31,7 +31,7 @@ def biomaj_version(options, config):
     Get biomaj version
     '''
     version = pkg_resources.require('biomaj')[0].version
-    tools = []
+    # tools = []
     biomaj_modules = [
         'biomaj',
         'biomaj-core',
@@ -234,15 +234,23 @@ def biomaj_search(options, config):
                 if prod['session'] == bank['current']:
                     iscurrent = "yes"
                 if options.json:
-                    results.append([b if b else '',
-                        prod['release'],
-                        prod['formats'],
-                        prod['types'], iscurrent])
+                    results.append(
+                        [
+                            b if b else '',
+                            prod['release'],
+                            prod['formats'],
+                            prod['types'], iscurrent
+                        ]
+                    )
                 else:
-                    results.append([b if b else '',
-                        prod['release'],
-                        ','.join(prod['formats']),
-                        ','.join(prod['types']), iscurrent])
+                    results.append(
+                        [
+                            b if b else '',
+                            prod['release'],
+                            ','.join(prod['formats']),
+                            ','.join(prod['types']), iscurrent
+                        ]
+                    )
         if options.json:
             return (True, {'matches': results, 'headers': headers})
 
@@ -796,6 +804,7 @@ def biomaj_user_info(options, config):
         msg += 'Api key: ' + str(user['apikey']) + '\n'
     return (True, msg)
 
+
 def biomaj_stats(options, config):
     disk_stats = Bank.get_banks_disk_usage()
     results = []
@@ -817,6 +826,7 @@ def biomaj_stats(options, config):
         msg += tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, msg)
 
+
 def biomaj_history(options, config):
     history = Bank.get_history(options.historyLimit)
     results = []
@@ -825,13 +835,16 @@ def biomaj_history(options, config):
         results.append(headers)
     msg = 'BioMAJ history\n'
     for h in history:
-        results.append([h['bank'],
-                        h['action'],
-                        datetime.datetime.utcfromtimestamp(h['start']),
-                        datetime.datetime.utcfromtimestamp(h['end']),
-                        str(h['updated']),
-                        str(h['error'])
-        ])
+        results.append(
+            [
+                h['bank'],
+                h['action'],
+                datetime.datetime.utcfromtimestamp(h['start']),
+                datetime.datetime.utcfromtimestamp(h['end']),
+                str(h['updated']),
+                str(h['error'])
+            ]
+        )
     if options.json:
         msg = {'headers': headers, 'history': results}
     else:

@@ -97,21 +97,21 @@ class DaemonService(object):
         for svc in Utils.services:
             service = svc.lower()
             if self.config['web'].get('local_endpoint_' + service, None):
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.service.' + service , '1')
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.proxy.' + service , self.config['web']['local_endpoint_' + service])
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.service.' + service, '1')
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.proxy.' + service, self.config['web']['local_endpoint_' + service])
         if self.config['web'].get('local_endpoint', None):
-            BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.proxy' , self.config['web']['local_endpoint'])
+            BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.proxy', self.config['web']['local_endpoint'])
         if self.config.get('rabbitmq', None):
             if self.config['rabbitmq'].get('host', None):
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq' , self.config['rabbitmq']['host'])
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq', self.config['rabbitmq']['host'])
             if self.config['rabbitmq'].get('port', None):
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_port' , str(self.config['rabbitmq']['port']))
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_port', str(self.config['rabbitmq']['port']))
             if self.config['rabbitmq'].get('user', None):
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_user' , self.config['rabbitmq']['user'])
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_user', self.config['rabbitmq']['user'])
             if self.config['rabbitmq'].get('password', None):
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_password' , self.config['rabbitmq']['password'])
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_password', self.config['rabbitmq']['password'])
             if self.config['rabbitmq'].get('virtual_host', None):
-                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_virtual_host' , self.config['rabbitmq']['virtual_host'])
+                BiomajConfig.global_config.set('GENERAL', 'micro.biomaj.rabbit_mq_virtual_host', self.config['rabbitmq']['virtual_host'])
 
         if 'log_config' in self.config:
             for handler in list(self.config['log_config']['handlers'].keys()):
@@ -156,7 +156,7 @@ class DaemonService(object):
         # Expires in 7 days if no update
         self.redis_client.expire(
             self.config['redis']['prefix'] + ':daemons:status',
-            3600*24*7
+            3600 * 24 * 7
         )
 
     def __end_action(self):

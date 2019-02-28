@@ -16,7 +16,7 @@ install:
 - python setup.py -q install
 script:
 - python setup.py test
-- flake8 --ignore E501,E123,W504 biomaj_core/*.py
+- flake8 --ignore E501,E123,W504 biomaj_daemon
 deploy:
   provider: pypi
   skip_existing: true
