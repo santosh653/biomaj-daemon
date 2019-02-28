@@ -84,7 +84,19 @@ biomaj_time_metric = Gauge("biomaj_daemon_time", "Bank update execution time in 
 def consul_declare(config):
     if config['consul']['host']:
         consul_agent = consul.Consul(host=config['consul']['host'])
-        consul_agent.agent.service.register('biomaj-daemon', service_id=config['consul']['id'], address=config['web']['hostname'], port=config['web']['port'], tags=['biomaj'])
+        consul_agent.agent.service.register(
+            'biomaj-daemon',
+            service_id=config['consul']['id'],
+            address=config['web']['hostname'],
+            port=config['web']['port'],
+            tags=[
+                'biomaj',
+                'api',
+                'traefik.backend=biomaj-daemon',
+                'traefik.frontend.rule=PathPrefix:/api/daemon',
+                'traefik.enable=true'
+                ]
+        )
         check = consul.Check.http(url='http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon', interval=20)
         consul_agent.agent.check.register(config['consul']['id'] + '_check', check=check, service_id=config['consul']['id'])
 

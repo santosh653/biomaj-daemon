@@ -2,6 +2,8 @@
   Fix some bank status info checks
   Add new endpoint /api/daemon/bank/<bank>/owns
   Add queued bank names in whatsup
+  Update pika dependency release
+  Add tags for traefik support
 3.0.17:
   Allow use of env variables to override micro.x and rabbitmq variables in global.properties
     like for config.yml.
