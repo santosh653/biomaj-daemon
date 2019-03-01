@@ -1,3 +1,5 @@
+3.0.19:
+  Fix traefix prefix
 3.0.18:
   Fix some bank status info checks
   Add new endpoint /api/daemon/bank/<bank>/owns

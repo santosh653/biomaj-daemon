@@ -94,7 +94,10 @@ def consul_declare(config):
                 'api',
                 'traefik.backend=biomaj-daemon',
                 'traefik.frontend.rule=PathPrefix:/api/daemon',
-                'traefik.enable=true'
+                'traefik.enable=true',
+                'traefik-int.backend=biomaj-daemon',
+                'traefik-int.frontend.rule=PathPrefix:/api/daemon',
+                'traefik-int.enable=true'
                 ]
         )
         check = consul.Check.http(url='http://' + config['web']['hostname'] + ':' + str(config['web']['port']) + '/api/daemon', interval=20)
