@@ -828,12 +828,14 @@ def biomaj_stats(options, config):
         msg += tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, msg)
 
+
 def biomaj_data_list(options, config):
     try:
         from biomaj_data.utils import list as blist
         return (True, 'Bank templates: ' + str(blist()))
     except Exception:
         return (False, 'biomaj-data package not installed')
+
 
 def biomaj_data_import(options, config):
     if not options.bank:
