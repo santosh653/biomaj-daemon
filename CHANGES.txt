@@ -1,3 +1,6 @@
+3.0.20:
+  Add some checks on options
+  Add data-list and data-import options
 3.0.19:
   Fix traefix prefix
 3.0.18:

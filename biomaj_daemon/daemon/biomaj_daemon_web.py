@@ -154,7 +154,9 @@ OPTIONS_PARAMS = {
     'proxy': None,
     'schedule': False,
     'history': False,
-    'historyLimit': 20
+    'historyLimit': 20,
+    'datalist': False,
+    'dataimport': False
 }
 
 

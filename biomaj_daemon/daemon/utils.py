@@ -712,6 +712,8 @@ def biomaj_update_status(options, config):
     '''
     get the status of a bank during an update cycle
     '''
+    if not options.bank:
+        return (False, 'bank option is missing')
     if not options.proxy:
         return (False, 'option not allowed without --proxy option')
     redis_client = redis.StrictRedis(
@@ -826,6 +828,25 @@ def biomaj_stats(options, config):
         msg += tabulate(results, headers="firstrow", tablefmt="grid")
     return (True, msg)
 
+def biomaj_data_list(options, config):
+    try:
+        from biomaj_data.utils import list as blist
+        return (True, 'Bank templates: ' + str(blist()))
+    except Exception:
+        return (False, 'biomaj-data package not installed')
+
+def biomaj_data_import(options, config):
+    if not options.bank:
+        return (False, 'option bank is missing')
+    try:
+        from biomaj_data.utils import importTo
+        (err, file_path) = importTo(options.bank, BiomajConfig.global_config.get('GENERAL', 'conf.dir'))
+        if err:
+            return (False, file_path)
+        return (True, 'Bank imported: ' + str(file_path))
+    except Exception:
+        return (False, 'biomaj-data package not installed')
+
 
 def biomaj_history(options, config):
     history = Bank.get_history(options.historyLimit)
@@ -925,5 +946,9 @@ def biomaj_client_action(options, config=None):
 
     if options.aboutme:
         return biomaj_user_info(options, config)
+    if options.datalist:
+        return biomaj_data_list(options, config)
+    if options.dataimport:
+        return biomaj_data_import(options, config)
 
     return (False, "no option match")
