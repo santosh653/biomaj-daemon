@@ -1,5 +1,7 @@
 # About
 
+[![PyPI version](https://badge.fury.io/py/biomaj-daemon.svg)](https://badge.fury.io/py/biomaj-daemon)
+
 Microservice to manage biomaj, acts as a frontend to receive biomaj-cli commands and execute operations
 
 Needs mongo and redis
