@@ -8,6 +8,10 @@ python:
 branches:
   except:
   - "/^feature.*$/"
+addons:
+  apt:
+    packages:
+      - libgnutls-dev
 install:
 - pip install flake8
 - pip install -r requirements.txt
