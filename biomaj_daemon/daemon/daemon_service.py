@@ -204,6 +204,15 @@ class DaemonService(object):
             elif options.removepending:
                 bmaj = Bank(options.bank, options, no_log=True)
                 bmaj.remove_pending(options.release)
+            elif options.repair:
+                action = 'repair'
+                self.__start_action(options.bank, action)
+                bmaj = Bank(options.bank, options)
+                self.logger.debug('Log file: ' + bmaj.config.log_file)
+                is_ok = bmaj.repair()
+                is_updated = bmaj.session.get('update')
+                Notify.notifyBankAction(bmaj)
+                self.__end_action()
         except Exception as e:
             self.logger.exception('Exception: ' + str(e))
             is_ok = False

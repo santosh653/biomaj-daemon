@@ -7,4 +7,5 @@ python-consul
 prometheus_client>=0.0.18
 requests
 biomaj-core>=3.0.16
-biomaj>=3.1.7
+biomaj>=3.1.14
+flask-cors

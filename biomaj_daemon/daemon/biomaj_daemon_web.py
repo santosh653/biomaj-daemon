@@ -10,6 +10,7 @@ from flask import jsonify
 from flask import request
 from flask import abort
 from flask import Response
+from flask_cors import CORS
 
 import requests
 
@@ -75,6 +76,7 @@ SchemaVersion.migrate_pendings()
 SchemaVersion.set_version()
 
 app = Flask(__name__)
+CORS(app)
 
 biomaj_metric = Counter("biomaj_daemon_total", "Bank total update execution.", ['bank', 'action', 'updated'])
 biomaj_error_metric = Counter("biomaj_daemon_errors", "Bank total update errors.", ['bank', 'action'])
@@ -156,7 +158,8 @@ OPTIONS_PARAMS = {
     'history': False,
     'historyLimit': 20,
     'datalist': False,
-    'dataimport': False
+    'dataimport': False,
+    'repair': False
 }
 
 
@@ -785,6 +788,31 @@ def biomaj_daemon_bank_update_directory(bank):
     options.bank = bank
     try:
         options.newdir = params['path']
+        (res, msg) = biomaj_client_action(options, config)
+        if res:
+            if isinstance(msg, dict):
+                return jsonify(msg)
+            else:
+                return jsonify({'msg': msg})
+    except Exception as e:
+        abort(500, str(e))
+
+
+@app.route('/api/daemon/bank/<bank>/repair', methods=['PUT'])
+def biomaj_daemon_bank_repair(bank):
+    (http_code, options, error) = daemon_api_auth(request)
+    if error:
+        abort(http_code, error)
+    if not options.user:
+        abort(401, 'This action requires authentication with api key')
+    options.repair = True
+    options.bank = bank
+    params = request.get_json()
+    if params is None:
+        params = {}
+    if 'release' in params:
+        options.release = params['release']
+    try:
         (res, msg) = biomaj_client_action(options, config)
         if res:
             if isinstance(msg, dict):

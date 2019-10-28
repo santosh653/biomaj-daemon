@@ -422,6 +422,13 @@ def biomaj_bank_update_request(options, config):
     return biomaj_send_message(options, config)
 
 
+def biomaj_bank_repair_request(options, config):
+    '''
+    Send bank repair request to rabbitmq
+    '''
+    return biomaj_send_message(options, config)
+
+
 def biomaj_whatsup(options, config):
     redis_client = None
     whatsup = []
@@ -496,6 +503,43 @@ def biomaj_send_message(options, config):
     options.timestamp = time.mktime(cur.timetuple())
     redis_client.lpush(config['redis']['prefix'] + ':queue', json.dumps(options.__dict__))
     return (True, None)
+
+
+def biomaj_bank_repair(options, config):
+    '''
+    Repair a bank
+    '''
+    if not options.bank:
+        return (False, "Bank name is missing")
+    banks = options.bank.split(',')
+    gres = True
+    msg = ''
+    for bank in banks:
+        options.bank = bank
+        no_log = True
+        if not options.proxy:
+            no_log = False
+        # logging.debug('Options: '+str(options.__dict__))
+        bmaj = Bank(bank, options=options, no_log=no_log)
+        check_status = bmaj.check()
+        if not check_status:
+            msg += 'Skip bank ' + options.bank + ': wrong config\n'
+            gres = False
+            continue
+        else:
+            msg += 'Bank repair request sent for ' + options.bank + '\n'
+            if not options.proxy:
+                res = bmaj.repair()
+                Notify.notifyBankAction(bmaj)
+            else:
+                res = biomaj_bank_repair_request(options, config)
+            if not res:
+                msg += 'Failed to send repair request for ' + options.bank + '\n'
+                gres = False
+
+    if not gres:
+        return (False, msg)
+    return (True, msg)
 
 
 def biomaj_bank_update(options, config):
@@ -952,5 +996,8 @@ def biomaj_client_action(options, config=None):
         return biomaj_data_list(options, config)
     if options.dataimport:
         return biomaj_data_import(options, config)
+
+    if options.repair:
+        return biomaj_bank_repair(options, config)
 
     return (False, "no option match")
