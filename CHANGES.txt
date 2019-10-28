@@ -1,6 +1,7 @@
 3.0.21:
   Add support for repair option
   Add cors support
+  Fix /status/ko
 3.0.20:
   Add some checks on options
   Add data-list and data-import options

@@ -681,7 +681,7 @@ def biomaj_daemon_bank_update_status(bank):
 
 
 @app.route('/api/daemon/status/ko', methods=['GET'])
-def biomaj_daemon_bank_status_ko(bank):
+def biomaj_daemon_bank_status_ko():
     (http_code, options, error) = daemon_api_auth(request)
     if error:
         abort(http_code, error)
